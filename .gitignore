@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+.python-version
+
+# Build and test
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Project artifacts
+/data/*
+!/data/external/
+!/data/external/SOURCES.md
+!/data/reference/
+!/data/reference/.gitkeep
+
+# Output and models
+models/
+*.joblib
+*.pkl
+*.bin
+
+# OS/editor
+.DS_Store
+.vscode/
+
+# Node
+node_modules/
+dist/
+
+# Notebook outputs
+.ipynb_checkpoints/
