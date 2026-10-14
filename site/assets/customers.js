@@ -11,14 +11,14 @@ App.view('customers', { title: 'Customers & orders', sub: 'Who buys, when they o
     ${tile({ cls: 'slate mini', label: 'UK share of revenue', value: fmt.pct(K.uk_share, 0), text: 'the rest is export', art: art.rings() })}</div>
   <div class="grid g-wide mt">
     ${card('When orders arrive', 'Orders by weekday and hour of day (UK time as recorded). Darker is busier.', '<div id="heat"></div><div class="scale"><span>Fewer</span><i id="hs"></i><span>More</span></div>')}
-    ${card('Revenue by country', 'Top eight countries and the rest', '<div class="chart sm"><canvas id="c-country"></canvas></div><div class="legend" id="cl"></div>')}</div>
+    ${card('Revenue by country', 'Top eight countries and the rest', '<div class="chart sm fixed"><canvas id="c-country"></canvas></div><div class="legend" id="cl"></div>')}</div>
   <div class="grid g2 mt">
     ${card('Active customers and orders', 'Unique customers and invoices per month', '<div class="chart"><canvas id="c-active"></canvas></div>')}
     ${card('Order value distribution', 'Invoices by total value (£)', '<div class="chart"><canvas id="c-value"></canvas></div>')}</div>
   <div class="grid g2 mt">
     ${card('Orders per customer', 'Customers by number of invoices (10 = ten or more)', '<div class="chart"><canvas id="c-repeat"></canvas></div>')}
     ${card('Country detail', 'Revenue is quantity × unit price on sale rows', '<div class="table-wrap" style="max-height:none"><table><thead><tr><th>Country</th><th class="num">Revenue</th><th class="num">Orders</th><th class="num">Customers</th></tr></thead><tbody>' + Cu.countries.map((c) => `<tr style="cursor:default"><td>${c[0]}</td><td class="num">${fmt.gbp(c[1], 0)}</td><td class="num">${fmt.int(c[2])}</td><td class="num">${fmt.int(c[3])}</td></tr>`).join('') + '</tbody></table></div>')}</div>`;
-  heatmap(document.getElementById('heat'), Cu.heat, { rows: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], cols: Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0')), color: 'orange', tip: (v) => fmt.int(v) + ' orders', showCols: (i) => i % 3 === 0, cell: 54 });
+  heatmap(document.getElementById('heat'), Cu.heat, { rows: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], cols: Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0')), color: 'orange', tip: (v) => fmt.int(v) + ' orders', showCols: (i) => i % 3 === 0, cell: 62 });
   document.getElementById('hs').style.background = `linear-gradient(90deg, ${withAlpha(C.orange, 0.1)}, ${C.orange})`;
   chart('c-country', { type: 'doughnut', data: { labels: Cu.countries.map((c) => c[0]), datasets: [{ data: Cu.countries.map((c) => c[1]), backgroundColor: palette, borderColor: C.card, borderWidth: 2, cutout: '66%' }] }, options: { maintainAspectRatio: false, plugins: { tooltip: { callbacks: { label: (c) => ` ${fmt.gbp(c.parsed, 0)}` } } } } });
   const tot = Cu.countries.reduce((a, c) => a + c[1], 0);

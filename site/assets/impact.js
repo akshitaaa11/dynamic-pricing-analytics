@@ -15,8 +15,8 @@ App.view('impact', { title: 'Impact', sub: 'What the recommended changes are est
     ${card('Size of recommended changes', 'Products by percentage change', '<div class="chart"><canvas id="c-hist"></canvas></div>')}
     ${card('Cumulative gain', 'Products ranked by estimated gain', '<div class="chart"><canvas id="c-cum"></canvas></div>')}</div>
   <div class="grid g2 mt">
-    ${card('Confidence', 'Recommended changes', '<div class="chart sm"><canvas id="c-conf"></canvas></div><div class="legend" id="conf-l"></div>')}
-    ${card('Binding guardrails', 'What limited the chosen price', '<div class="chart sm"><canvas id="c-bind"></canvas></div><div class="legend" id="bind-l"></div>')}</div>
+    ${card('Confidence', 'Recommended changes', '<div class="chart sm fixed"><canvas id="c-conf"></canvas></div><div class="legend" id="conf-l"></div>')}
+    ${card('Binding guardrails', 'What limited the chosen price', '<div class="chart sm fixed"><canvas id="c-bind"></canvas></div><div class="legend" id="bind-l"></div>')}</div>
   <div class="grid g2 mt">
     ${card('Why products are held', 'All held products', '<div class="bars" id="reasons"></div>')}
     ${card('By price band', 'Recommended changes grouped by current list price', '<div class="chart"><canvas id="c-band"></canvas></div>')}</div>

@@ -13,3 +13,4 @@
 - Consolidated the website into three sidebar pages with in-page tabs: Overview (Summary, Data & limits, Method), Demand & forecast (Demand, Customers & orders, Products, Forecast, Forecast lab) and Pricing (Elasticity, Recommendations, Impact). The Overview summary is now just the hero and four tiles.
 - Website: larger type (17px body, bigger chart labels), more spacing, taller charts and at most two charts per row; tabs regrouped into pairs so no chart sits alone in a row.
 - Website: four sidebar pages named for their content (Overview, Demand, Forecast, Pricing) with tabs inside each; larger type again (18.5px body, 15.5px chart labels).
+- Website: cards now fill their grid cell and charts grow to match their neighbour (no blank space inside cards); Demand tab regrouped; every chart card has an info button that explains what the visual is and what it tells.

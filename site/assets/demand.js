@@ -16,11 +16,11 @@ App.view('demand', { title: 'Demand', sub: 'Seasonality, trend and concentration
     ${card('Seasonality', 'Units by calendar month, all years', '<div class="chart lg"><canvas id="c-season"></canvas></div>')}</div>
   <div class="grid mt">${card('Demand calendar', 'Total units per ISO week, one row per year. Darker is higher.', '<div id="cal"></div><div class="scale"><span>Low</span><i id="cal-scale"></i><span>High</span></div>')}</div>
   <div class="grid g2 mt">
-    ${card('Product tiers', 'Share of units by product rank', '<div class="chart sm"><canvas id="c-tier"></canvas></div><div class="legend" id="tier-l"></div>')}
-    ${card('Concentration', 'Cumulative units vs share of products', '<div class="chart lg"><canvas id="c-pareto"></canvas></div>')}</div>
+    ${card('Product tiers', 'Share of units by product rank', '<div class="chart sm fixed"><canvas id="c-tier"></canvas></div><div class="legend" id="tier-l"></div>')}
+    ${card('Top 10 products', 'By units', '<div class="table-wrap" style="max-height:none"><table><thead><tr><th>Product</th><th class="num">Units</th><th class="num">Avg price</th></tr></thead><tbody id="tb"></tbody></table></div>')}</div>
   <div class="grid g2 mt">
-    ${card('Availability proxy', 'Share of product-weeks with zero sales or flagged unavailable', '<div class="chart"><canvas id="c-zero"></canvas></div><div class="src">Inferred from sales gaps; not inventory data.</div>')}
-    ${card('Top 10 products', 'By units', '<div class="table-wrap" style="max-height:none"><table><thead><tr><th>Product</th><th class="num">Units</th><th class="num">Avg price</th></tr></thead><tbody id="tb"></tbody></table></div>')}</div>`;
+    ${card('Concentration', 'Cumulative units vs share of products', '<div class="chart"><canvas id="c-pareto"></canvas></div>')}
+    ${card('Availability proxy', 'Share of product-weeks with zero sales or flagged unavailable', '<div class="chart"><canvas id="c-zero"></canvas></div><div class="src">Inferred from sales gaps; not inventory data.</div>')}</div>`;
   const draw = (kind) => {
     const labels = kind === 'weekly' ? O.weeks.map(weekLabel) : O.monthly.labels.map(monthLabel), d = kind === 'weekly' ? O.weekly : O.monthly;
     chart('c-weekly', { type: 'line', data: { labels, datasets: [{ label: 'Units', data: d.units, borderColor: C.green, backgroundColor: (c) => gradient(c.chart.ctx, C.green, 340), fill: true, tension: .3, yAxisID: 'y' }, { label: 'Revenue proxy (£)', data: d.revenue, borderColor: C.orange, tension: .3, yAxisID: 'y1' }] },
