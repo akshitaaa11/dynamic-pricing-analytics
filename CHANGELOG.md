@@ -18,3 +18,4 @@
 - Website: Top products is now a colour-accented card leaderboard (3 per row, first 10 visible, 'Show 10 more' reveals the next 10 up to 50); added a glassmorphism layer across the site (translucent blurred cards, sidebar and controls over soft palette gradients, light and dark).
 - Website: gradient tiles replaced by a slim stat strip on every inner tab (kept on Overview); order-value histogram merged into a Customer activity chart with a Monthly / Order values toggle; glass effect toned down (less blur and tint, more opaque); Top products cards redesigned as plain rows of facts with a single accent bar.
 - Website: type scaled back to 17px body (chart labels 14px); the site now opens in the light theme by default regardless of the browser's dark-mode setting, and remembers a visitor's choice of dark.
+- Website: removed the results note at the bottom of the Overview summary.
