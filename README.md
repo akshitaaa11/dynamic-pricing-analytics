@@ -405,3 +405,8 @@ Build in this order. Each phase ends with its **exit check** passing and a short
 - Office for National Statistics, *Retail Sales Index time series (DRSI)*. Mirror: https://db.nomics.world/ONS/DRSI
 - Olist, *Brazilian E-Commerce Public Dataset* (optional competitor-price case study). https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
 - `holidays` Python package (UK bank holidays). https://pypi.org/project/holidays/
+
+
+## Live dashboard
+
+The website in `site/` is deployed to GitHub Pages by `.github/workflows/pages.yml` on every push to `main` that changes `site/`. Live at https://akshitaaa11.github.io/dynamic-pricing-analytics/ once Pages is enabled (Settings → Pages → Source: GitHub Actions).
