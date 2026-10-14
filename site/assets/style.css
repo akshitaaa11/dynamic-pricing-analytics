@@ -248,3 +248,68 @@ select,input[type=text]{font-size:17.5px;height:50px}.picker select{font-size:18
 .card.banner{flex-direction:row}
 .tabs[hidden]{display:none}
 .pager .info{white-space:nowrap;margin-right:auto}
+
+/* ================= Glass layer ================= */
+:root{--glass:rgba(255,255,255,.58);--glass-strong:rgba(255,255,255,.78);--glass-line:rgba(255,255,255,.75);--glass-edge:rgba(40,50,45,.09);--glass-shadow:0 10px 36px rgba(38,50,44,.09),0 1px 2px rgba(38,50,44,.05);--blur:blur(18px) saturate(1.5)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--glass:rgba(30,35,32,.52);--glass-strong:rgba(34,40,37,.72);--glass-line:rgba(255,255,255,.09);--glass-edge:rgba(0,0,0,.35);--glass-shadow:0 12px 40px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.3)}}
+:root[data-theme="dark"]{--glass:rgba(30,35,32,.52);--glass-strong:rgba(34,40,37,.72);--glass-line:rgba(255,255,255,.09);--glass-edge:rgba(0,0,0,.35);--glass-shadow:0 12px 40px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.3)}
+body{background-attachment:fixed;background-image:
+  radial-gradient(38% 34% at 8% 6%,color-mix(in srgb,var(--green) 26%,transparent),transparent 70%),
+  radial-gradient(34% 30% at 92% 12%,color-mix(in srgb,var(--amber) 24%,transparent),transparent 70%),
+  radial-gradient(40% 38% at 86% 88%,color-mix(in srgb,var(--slate) 24%,transparent),transparent 70%),
+  radial-gradient(32% 30% at 12% 86%,color-mix(in srgb,var(--violet) 18%,transparent),transparent 70%),
+  radial-gradient(var(--dot) 1px,transparent 1px);
+  background-size:auto,auto,auto,auto,22px 22px}
+.card,.side,.results,.info .tip{-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+.card{background:var(--glass);border:1px solid var(--glass-line);box-shadow:var(--glass-shadow),inset 0 1px 0 var(--glass-line);border-radius:18px}
+.card.flat{background:transparent}
+.side{background:var(--glass);border-right:1px solid var(--glass-line);box-shadow:inset -1px 0 0 var(--glass-edge)}
+.nav a:hover{background:var(--glass)}
+.nav a.on{background:var(--glass-strong);border-color:var(--glass-line);box-shadow:var(--glass-shadow)}
+.nav a .ico{background:var(--glass)}.nav a.on .ico{background:var(--glass-strong);border-color:var(--glass-line)}
+.brand-mark{background:var(--glass-strong);border-color:var(--glass-line);border-radius:14px;box-shadow:var(--glass-shadow)}
+.gsearch input,select,input[type=text]{background:var(--glass-strong);border:1px solid var(--glass-line);box-shadow:inset 0 1px 0 var(--glass-line),0 1px 2px var(--glass-edge);border-radius:12px}
+.seg{background:var(--glass);border-color:var(--glass-line);border-radius:12px}.seg button.on{background:var(--glass-strong);box-shadow:0 1px 4px var(--glass-edge);border-radius:9px}
+.theme button.on{background:var(--glass-strong);border-color:var(--glass-line);border-radius:12px;box-shadow:var(--glass-shadow)}
+.theme button{border-radius:12px}
+.tabs{border-bottom-color:var(--glass-edge)}
+.tabs button.on{border-bottom-color:var(--lime)}
+.info{background:var(--glass-strong);border-color:var(--glass-line)}
+.note{background:var(--glass);border:1px solid var(--glass-line);border-radius:14px}
+.note.warn{background:color-mix(in srgb,var(--warn-bg) 80%,transparent)}.note.ok{background:color-mix(in srgb,var(--ok-bg) 80%,transparent)}
+.banner .ic{border-radius:14px}
+.tile{border-radius:18px;box-shadow:var(--glass-shadow),inset 0 1px 0 rgba(255,255,255,.35)}
+.tile::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(255,255,255,0) 45%);pointer-events:none;z-index:-1}
+.hero-copy{background:radial-gradient(60% 55% at 85% 55%,color-mix(in srgb,var(--amber) 22%,transparent),transparent 70%),radial-gradient(45% 45% at 78% 70%,color-mix(in srgb,var(--green) 16%,transparent),transparent 70%),var(--glass)}
+.tag.hold,.chip.grey{background:var(--glass-strong)}
+tbody tr:hover{background:var(--glass)}tbody tr.sel{background:color-mix(in srgb,var(--lime) 22%,transparent)}
+th,td,.stat-line,.legend .row{border-color:var(--glass-edge)}
+.track{background:var(--glass-edge)}
+.sim-out div{background:var(--glass);border:1px solid var(--glass-line);border-radius:14px}
+.heat .c{border-radius:4px}
+.flow .step{background:var(--glass);border-color:var(--glass-line);border-radius:14px;-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+.pager button{background:var(--glass-strong);border-color:var(--glass-line);border-radius:10px}
+/* ================= Top products cards ================= */
+.pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.pcard{--ac:var(--slate);position:relative;display:flex;flex-direction:column;gap:16px;padding:22px 22px 20px;border-radius:20px;background:var(--glass);border:1px solid var(--glass-line);box-shadow:var(--glass-shadow),inset 0 1px 0 var(--glass-line);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);cursor:pointer;overflow:hidden;transition:transform .18s,box-shadow .18s;color:inherit;text-decoration:none}
+.pcard::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,var(--ac),color-mix(in srgb,var(--ac) 35%,transparent))}
+.pcard::after{content:"";position:absolute;right:-60px;top:-60px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--ac) 22%,transparent),transparent 70%);pointer-events:none}
+.pcard:hover{transform:translateY(-3px);box-shadow:0 18px 44px rgba(38,50,44,.16),inset 0 1px 0 var(--glass-line);text-decoration:none}
+.pcard .top{display:flex;gap:14px;align-items:flex-start;position:relative;z-index:1}
+.pcard .rank{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:19px;font-weight:500;color:#fff;background:linear-gradient(145deg,var(--ac),color-mix(in srgb,var(--ac) 60%,#000));box-shadow:0 6px 16px color-mix(in srgb,var(--ac) 40%,transparent)}
+.pcard h4{margin:0;font-size:19px;font-weight:400;line-height:1.3}
+.pcard .code{color:var(--muted);font-size:14.5px;margin-top:2px}
+.pcard .bar{position:relative;z-index:1}
+.pcard .bar .l{display:flex;justify-content:space-between;font-size:14.5px;color:var(--muted);margin-bottom:6px}
+.pcard .bar .l b{color:var(--ink);font-weight:400}
+.pcard .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative;z-index:1}
+.pcard .stats div{background:var(--glass);border:1px solid var(--glass-line);border-radius:14px;padding:10px 12px}
+.pcard .stats small{display:block;color:var(--muted);font-size:13px}.pcard .stats b{font-size:19px;font-weight:400}
+.pcard .foot{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14.5px;color:var(--muted);position:relative;z-index:1}
+.more{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:30px;color:var(--muted);font-size:15.5px}
+.btn{height:50px;padding:0 30px;border-radius:30px;border:1px solid var(--glass-line);background:var(--glass-strong);color:var(--ink);font:inherit;font-weight:400;font-size:17px;cursor:pointer;box-shadow:var(--glass-shadow);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+.btn:hover{border-color:var(--green)}
+.btn.ghost{background:transparent;box-shadow:none;height:40px;font-size:15.5px;color:var(--muted)}
+@media(max-width:1280px){.pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.pgrid{grid-template-columns:1fr}}
+.pcard h4{min-height:2.6em}.pcard .foot{margin-top:auto}

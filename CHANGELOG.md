@@ -15,3 +15,4 @@
 - Website: four sidebar pages named for their content (Overview, Demand, Forecast, Pricing) with tabs inside each; larger type again (18.5px body, 15.5px chart labels).
 - Website: cards now fill their grid cell and charts grow to match their neighbour (no blank space inside cards); Demand tab regrouped; every chart card has an info button that explains what the visual is and what it tells.
 - Website: new Top products page (top 50 with share, revenue proxy, price and decision, plus a top-20 bar chart); Demand page now has a full-width weekly chart and a compact pie for product tiers.
+- Website: Top products is now a colour-accented card leaderboard (3 per row, first 10 visible, 'Show 10 more' reveals the next 10 up to 50); added a glassmorphism layer across the site (translucent blurred cards, sidebar and controls over soft palette gradients, light and dark).
