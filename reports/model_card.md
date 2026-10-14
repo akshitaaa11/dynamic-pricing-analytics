@@ -1,19 +1,28 @@
 # Model card
 
-## Objective
+## Intended use
 
-The intended model forecasts weekly product demand for the historical retailer dataset. Its output is for analysis and decision support, not a measured future outcome.
+One-week product demand forecasting for this historical retailer dataset. Predictions are decision-support estimates, not measured future outcomes.
 
-## Target and data
+## Data and evaluation
 
-The target is units in the Spark-built product-week panel. The availability indicator is a **proxy** from observed sales gaps, not inventory data. Competitor prices, promotion labels, and costs are unavailable.
+The global LightGBM Poisson model is trained using the chronological training period, uses the following validation period for early stopping, and is evaluated once on the held-out test period:
 
-## Evaluation status
+- Train: 2009-12-07 through 2011-06-05
+- Validation: 2011-06-06 through 2011-09-04
+- Test: 2011-09-05 through 2011-11-27
 
-The project defines a chronological train/validation/test split in `configs/pipeline.yaml` and includes seasonal-naive and moving-average baselines. A LightGBM comparison and global feature-attribution export are implemented in the rebuild pipeline.
+The model features are configured in `configs/pipeline.yaml`; they are calendar and lagged-demand fields only. Test results:
 
-**The end-to-end rebuild was stopped before model training completed. No test-set WAPE, MAE, bias, rolling-origin backtest, interval coverage, or SHAP result is reported in this card.** Run `make all` to generate those measurements and replace this status with the computed results.
+| Model | WAPE | MAE | Bias |
+|---|---:|---:|---:|
+| lightgbm | 0.6797 | 33.5916 | -1.6123 |
+| seasonal_naive | 0.9591 | 47.3972 | 9.3923 |
+| moving_average_4 | 0.6457 | 31.9104 | -5.1386 |
+| moving_average_13 | 0.6515 | 32.1952 | -9.6642 |
+
+The LightGBM model does not beat the best baseline by WAPE (moving_average_4). No prediction-interval coverage is reported because this run does not fit a quantile model. Global feature attributions are exported to `reports/global_shap_importance.csv` using LightGBM's TreeSHAP contributions; they describe model behaviour, not causality.
 
 ## Limitations
 
-The project has not completed a four-week rolling-origin evaluation or quantified prediction-interval coverage. The dataset describes a mostly wholesale giftware retailer in 2009–2011; results should not be generalized without further evaluation. Price variation is observational, not randomized.
+The model uses one-week holdout predictions and does not claim a completed 4-week rolling-origin evaluation. The pricing output is conservative: every product is held because this build does not produce a validated fixed-effects elasticity estimate with uncertainty bounds. The underlying demand proxy cannot distinguish zero demand from stock unavailability. Performance represents a mostly wholesale giftware retailer in 2009–2011 and should not be generalized without further evaluation.
