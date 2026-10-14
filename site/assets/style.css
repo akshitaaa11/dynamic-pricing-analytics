@@ -161,3 +161,48 @@ tbody tr{cursor:pointer}tbody tr:hover{background:var(--soft)}tbody tr.sel{backg
 .tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:11px 18px;font:inherit;font-weight:400;font-size:15.5px;color:var(--muted);cursor:pointer;margin-bottom:-1px;white-space:nowrap}
 .tabs button:hover{color:var(--ink)}.tabs button.on{color:var(--ink);border-bottom-color:var(--lime)}
 .tags{margin-top:0;padding-top:14px}
+/* ---- Roomier layout and larger type ---- */
+body{font-size:17px;font-weight:350;line-height:1.6}
+:root{--muted:#666a67}
+:root[data-theme="dark"]{--muted:#a0a6a0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--muted:#a0a6a0}}
+.side{width:auto;padding:30px 20px 24px 22px}
+.brand b{font-size:21px}.brand small{font-size:15px}
+.nav a{font-size:17.5px;gap:14px;padding:7px 12px 7px 5px}.nav a .ico{width:42px;height:42px}.nav a svg{width:20px;height:20px}
+.nav-label{font-size:12px}
+.gsearch input{font-size:16px;height:46px}
+.side-foot{font-size:14.5px}
+.main{padding:28px 56px 72px;max-width:1360px;margin:0 auto;width:100%}
+.head h1{font-size:32px}.head p{font-size:17.5px;max-width:760px;margin-top:4px}
+.tabs button{font-size:17px;padding:13px 22px}
+.tags{font-size:15.5px;padding:16px 0 26px;margin-bottom:30px}
+.grid{gap:28px}.mt{margin-top:28px}.mt2{margin-top:40px}
+.card{padding:28px 30px;border-radius:10px}
+.card h3{font-size:21px}.card .sub{font-size:15.5px;margin-top:4px}
+.card-head{margin-bottom:22px}
+.chip{font-size:14.5px}
+.banner p{font-size:16.5px}.banner .ic{width:52px;height:52px}
+.note{font-size:16px;padding:16px 18px}
+.src{font-size:14px;margin-top:14px}
+.stat-line,.legend .row,.bar-row .l{font-size:16.5px}
+td{font-size:16px;padding:14px 14px}th{font-size:14.5px;padding:12px 14px}
+.tag{font-size:14px;padding:3px 10px}
+.seg button{font-size:15px;padding:8px 16px}
+select,input[type=text]{height:46px;font-size:16px}
+.picker select{height:54px;font-size:17px}.picker label{font-size:16px}
+.chart{height:380px}.chart.sm{height:300px}.chart.lg{height:440px}.chart.xl{height:480px}.chart.xs{height:190px}
+.tile{padding:24px 26px}.tile .k{font-size:17px}.tile .d{font-size:16.5px;max-width:260px}.tile .n.s{font-size:60px}
+.tile.mini{min-height:170px}.tile.mini .n{font-size:54px}
+.hero-copy p.lead{font-size:20px}.feat .t{font-size:25px}.feat .s{font-size:16px}
+.heat{font-size:13px}.scale{font-size:13.5px}
+.flow .step small{font-size:14.5px}.flow .step i{font-size:12px}
+.pager{font-size:15px}.pager button{height:36px}
+.sim-out b{font-size:24px}.sim-out small{font-size:14px}
+/* at most two charts per row; an odd last card spans the full width */
+.g3{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3>.card:last-child:nth-child(odd){grid-column:1/-1}
+.g4>.card:last-child:nth-child(odd){grid-column:auto}
+@media(max-width:1280px){.main{padding:24px 32px 60px}}
+@media(max-width:980px){.main{padding:18px 16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}.g3{grid-template-columns:1fr}.chart{height:320px}.chart.lg,.chart.xl{height:360px}}
+.seg{flex-wrap:nowrap}.seg button{white-space:nowrap}
+.card-head{flex-wrap:wrap}

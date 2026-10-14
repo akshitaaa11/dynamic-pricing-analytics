@@ -15,13 +15,14 @@ App.view('forecast', { title: 'Forecast', sub: 'One-week-ahead unit demand per p
   <div class="grid g-wide mt">
     ${card('Total demand: actual vs forecast', 'Sum over all products, with 26 weeks of context', '<div class="chart xl"><canvas id="c-agg"></canvas></div>', { tools: '<div class="seg" id="mseg"><button data-m="lightgbm" class="on">LightGBM</button><button data-m="moving_average_4">4-wk avg</button><button data-m="seasonal_naive">Seasonal</button></div>' })}
     ${card('Model comparison', 'Test WAPE', '<div class="chart sm"><canvas id="c-wape"></canvas></div><table style="margin-top:6px"><thead><tr><th>Model</th><th class="num">MAE</th><th class="num">Bias</th></tr></thead><tbody>' + F.metrics.map((m) => `<tr style="cursor:default"><td>${L[m.model]}</td><td class="num">${fmt.num(m.mae, 1)}</td><td class="num">${fmt.num(m.bias, 1)}</td></tr>`).join('') + '</tbody></table>')}</div>
-  <div class="grid g3 mt">
+  <div class="grid g2 mt">
     ${card('Error by demand tier', 'WAPE; tiers from average training-period volume', '<div class="chart"><canvas id="c-tier"></canvas></div>')}
-    ${card('Weekly accuracy', 'WAPE per test week', '<div class="chart"><canvas id="c-weekly"></canvas></div>')}
     ${card('Interval calibration', 'Share inside the 80% interval, by tier', '<div class="chart"><canvas id="c-cal"></canvas></div>')}</div>
-  <div class="grid g3 mt">
+  <div class="grid g2 mt">
     ${card('Error distribution', 'Forecast minus actual per product-week, units (clipped at ±60)', '<div class="chart"><canvas id="c-res"></canvas></div>')}
-    ${card('Predicted vs actual', 'Sample of 1,500 product-weeks with sales (log scales)', '<div class="chart"><canvas id="c-sc"></canvas></div>')}
+    ${card('Predicted vs actual', 'Sample of 1,500 product-weeks with sales (log scales)', '<div class="chart"><canvas id="c-sc"></canvas></div>')}</div>
+  <div class="grid g2 mt">
+    ${card('Weekly accuracy', 'WAPE per test week', '<div class="chart"><canvas id="c-weekly"></canvas></div>')}
     ${card('Feature importance', 'Mean |SHAP|. Describes the model, not causes.', '<div class="chart"><canvas id="c-shap"></canvas></div>')}</div>`;
   const agg = (m) => { const pre = F.context.weeks.length; chart('c-agg', { type: 'line', data: { labels: F.context.weeks.concat(F.aggregate.weeks).map(weekLabel), datasets: [{ label: 'Actual', data: F.context.units.concat(F.aggregate.units), borderColor: C.green, tension: .3 }, { label: L[m], data: Array(pre).fill(null).concat(F.aggregate[m]), borderColor: C.orange, borderDash: m === 'lightgbm' ? [] : [6, 4], tension: .3 }] }, options: { maintainAspectRatio: false, scales: axes(), plugins: { legend: legend(), tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${fmt.int(c.parsed.y)}` } } } } }); };
   agg('lightgbm');

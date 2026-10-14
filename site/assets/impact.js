@@ -14,13 +14,13 @@ App.view('impact', { title: 'Impact', sub: 'What the recommended changes are est
   <div class="grid g2 mt">
     ${card('Size of recommended changes', 'Products by percentage change', '<div class="chart"><canvas id="c-hist"></canvas></div>')}
     ${card('Cumulative gain', 'Products ranked by estimated gain', '<div class="chart"><canvas id="c-cum"></canvas></div>')}</div>
-  <div class="grid g3 mt">
-    ${card('Confidence', 'Recommended changes', '<div class="chart sm"><canvas id="c-conf"></canvas></div><div class="legend" id="conf-l"></div>')}
-    ${card('Binding guardrails', 'What limited the chosen price', '<div class="chart sm"><canvas id="c-bind"></canvas></div><div class="legend" id="bind-l"></div>')}
-    ${card('Why products are held', 'All held products', '<div class="bars" id="reasons"></div>')}</div>
   <div class="grid g2 mt">
-    ${card('By price band', 'Recommended changes grouped by current list price', '<div class="chart"><canvas id="c-band"></canvas></div>')}
-    ${card('Top 10 estimated gains', 'With the range across the elasticity interval', '<div class="chart"><canvas id="c-top"></canvas></div>')}</div>`;
+    ${card('Confidence', 'Recommended changes', '<div class="chart sm"><canvas id="c-conf"></canvas></div><div class="legend" id="conf-l"></div>')}
+    ${card('Binding guardrails', 'What limited the chosen price', '<div class="chart sm"><canvas id="c-bind"></canvas></div><div class="legend" id="bind-l"></div>')}</div>
+  <div class="grid g2 mt">
+    ${card('Why products are held', 'All held products', '<div class="bars" id="reasons"></div>')}
+    ${card('By price band', 'Recommended changes grouped by current list price', '<div class="chart"><canvas id="c-band"></canvas></div>')}</div>
+  <div class="grid mt">${card('Top 10 estimated gains', 'With the range across the elasticity interval', '<div class="chart lg"><canvas id="c-top"></canvas></div>')}</div>`
   const bins = Array.from({ length: 21 }, (_, i) => -0.1 + i * 0.01);
   chart('c-hist', { type: 'bar', data: { labels: bins.map((b) => (b * 100).toFixed(0) + '%'), datasets: [{ data: bins.map((b) => chg.filter((r) => r.percent_change >= b - 0.005 && r.percent_change < b + 0.005).length), backgroundColor: bins.map((b) => (b < 0 ? withAlpha(C.orange, 0.85) : withAlpha(C.green, 0.85))), borderRadius: 3 }] }, options: { maintainAspectRatio: false, scales: { x: { ...axes().x, ticks: { maxTicksLimit: 8, maxRotation: 0 } }, y: axes().y }, plugins: { tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} products` } } } } });
   const sorted = [...chg].sort((a, b) => b.revenue_gain - a.revenue_gain); let run = 0;

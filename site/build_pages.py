@@ -1,7 +1,7 @@
 """Generate the HTML shells for the website pages (one per page, listing the data files each needs)."""
 from pathlib import Path
 
-FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500&display=swap">'
+FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@200..500&display=swap">'
 PAGES = {
     "index": ("Overview", ["overview", "forecast", "pricing", "data", "search"], ["summary", "data", "about"]),
     "explore": ("Demand and forecast", ["overview", "customers", "forecast", "products", "pricing", "search"], ["demand", "customers", "products", "forecast", "lab"]),

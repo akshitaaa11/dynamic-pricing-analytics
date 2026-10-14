@@ -15,11 +15,12 @@ App.view('demand', { title: 'Demand', sub: 'Seasonality, trend and concentration
     ${card('Weekly demand', 'Units and revenue proxy (units × small-order list price)', '<div class="chart lg"><canvas id="c-weekly"></canvas></div><div class="src">Partial first and last weeks drop toward zero.</div>', { tools: '<div class="seg" id="seg"><button data-k="weekly" class="on">Weekly</button><button data-k="monthly">Monthly</button></div>' })}
     ${card('Seasonality', 'Units by calendar month, all years', '<div class="chart lg"><canvas id="c-season"></canvas></div>')}</div>
   <div class="grid mt">${card('Demand calendar', 'Total units per ISO week, one row per year. Darker is higher.', '<div id="cal"></div><div class="scale"><span>Low</span><i id="cal-scale"></i><span>High</span></div>')}</div>
-  <div class="grid g3 mt">
+  <div class="grid g2 mt">
     ${card('Product tiers', 'Share of units by product rank', '<div class="chart sm"><canvas id="c-tier"></canvas></div><div class="legend" id="tier-l"></div>')}
-    ${card('Concentration', 'Cumulative units vs share of products', '<div class="chart"><canvas id="c-pareto"></canvas></div>')}
-    ${card('Availability proxy', 'Share of product-weeks with zero sales or flagged unavailable', '<div class="chart"><canvas id="c-zero"></canvas></div><div class="src">Inferred from sales gaps; not inventory data.</div>')}</div>
-  <div class="grid mt">${card('Top 10 products', 'By units', '<div class="table-wrap" style="max-height:none"><table><thead><tr><th>Code</th><th>Product</th><th class="num">Units</th><th class="num">Revenue proxy</th><th class="num">Avg price</th></tr></thead><tbody id="tb"></tbody></table></div>')}</div>`;
+    ${card('Concentration', 'Cumulative units vs share of products', '<div class="chart lg"><canvas id="c-pareto"></canvas></div>')}</div>
+  <div class="grid g2 mt">
+    ${card('Availability proxy', 'Share of product-weeks with zero sales or flagged unavailable', '<div class="chart"><canvas id="c-zero"></canvas></div><div class="src">Inferred from sales gaps; not inventory data.</div>')}
+    ${card('Top 10 products', 'By units', '<div class="table-wrap" style="max-height:none"><table><thead><tr><th>Product</th><th class="num">Units</th><th class="num">Avg price</th></tr></thead><tbody id="tb"></tbody></table></div>')}</div>`;
   const draw = (kind) => {
     const labels = kind === 'weekly' ? O.weeks.map(weekLabel) : O.monthly.labels.map(monthLabel), d = kind === 'weekly' ? O.weekly : O.monthly;
     chart('c-weekly', { type: 'line', data: { labels, datasets: [{ label: 'Units', data: d.units, borderColor: C.green, backgroundColor: (c) => gradient(c.chart.ctx, C.green, 340), fill: true, tension: .3, yAxisID: 'y' }, { label: 'Revenue proxy (£)', data: d.revenue, borderColor: C.orange, tension: .3, yAxisID: 'y1' }] },
@@ -40,6 +41,6 @@ App.view('demand', { title: 'Demand', sub: 'Seasonality, trend and concentration
     options: { maintainAspectRatio: false, parsing: false, interaction: { mode: 'nearest', intersect: false }, scales: { x: { type: 'linear', min: 0, max: 100, grid: { color: C.grid }, ticks: { callback: (v) => v + '%' }, title: { display: true, text: '% of products' } }, y: { min: 0, max: 100, grid: { color: C.grid }, border: { display: false }, ticks: { callback: (v) => v + '%' } } }, plugins: { legend: legend(), tooltip: { callbacks: { title: () => '', label: (c) => ` ${c.parsed.y.toFixed(0)}% at ${c.parsed.x.toFixed(0)}% of products` } } } } });
   chart('c-zero', { type: 'line', data: { labels: O.zero_by_month.labels.map(monthLabel), datasets: [{ label: 'Zero-sales weeks', data: O.zero_by_month.zero.map((v) => v * 100), borderColor: C.orange, tension: .3 }, { label: 'Possibly unavailable', data: O.zero_by_month.unavailable.map((v) => v * 100), borderColor: C.slate, tension: .3 }] },
     options: { maintainAspectRatio: false, scales: { x: axes().x, y: { ...axes().y, ticks: { callback: (v) => v + '%' } } }, plugins: { legend: legend() } } });
-  document.getElementById('tb').innerHTML = O.top_products.map((r) => `<tr onclick="location.href='products.html#${encodeURIComponent(r[0])}'" style="cursor:pointer"><td>${r[0]}</td><td>${App.esc(nice(names[r[0]]))}</td><td class="num">${fmt.int(r[1])}</td><td class="num">${fmt.gbp(r[2], 0)}</td><td class="num">${fmt.gbp(r[3])}</td></tr>`).join('');
+  document.getElementById('tb').innerHTML = O.top_products.map((r) => `<tr onclick="location.href='products.html#${encodeURIComponent(r[0])}'" style="cursor:pointer"><td>${App.esc(nice(names[r[0]])).slice(0, 30)}<br><small style="color:var(--muted)">${r[0]}</small></td><td class="num">${fmt.int(r[1])}</td><td class="num">${fmt.gbp(r[3])}</td></tr>`).join('');
 });
 })();

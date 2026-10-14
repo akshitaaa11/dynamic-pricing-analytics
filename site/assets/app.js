@@ -50,7 +50,7 @@
   function chartDefaults() {
     if (!window.Chart) return;
     const C = col(), D = Chart.defaults;
-    D.font.family = '"Outfit","Urbanist","Inter",system-ui,sans-serif'; D.font.size = 12; D.font.weight = 300;
+    D.font.family = '"Outfit","Urbanist","Inter",system-ui,sans-serif'; D.font.size = 14; D.font.weight = 350;
     D.color = C.muted; D.borderColor = C.grid;
     D.plugins.legend.display = false;
     Object.assign(D.plugins.tooltip, { backgroundColor: C.card, titleColor: C.ink, bodyColor: C.muted, borderColor: C.border, borderWidth: 1, padding: 11, cornerRadius: 6, boxPadding: 5, usePointStyle: true, titleFont: { weight: 400 } });
@@ -60,7 +60,7 @@
   const axes = (yFmt, o = {}) => { const C = col(); return {
     x: { grid: { color: C.grid, drawTicks: false }, border: { display: false }, ticks: { maxTicksLimit: 9, maxRotation: 0, padding: 8 }, ...(o.x || {}) },
     y: { grid: { color: C.grid, drawTicks: false }, border: { display: false }, ticks: { callback: yFmt || ((v) => fmt.compact(v)), maxTicksLimit: 6, padding: 8 }, ...(o.y || {}) } }; };
-  const legend = () => ({ display: true, align: 'start', labels: { usePointStyle: false, boxWidth: 22, boxHeight: 3, padding: 16, generateLabels: (c) => Chart.defaults.plugins.legend.labels.generateLabels(c).map((l) => { const ds = c.data.datasets[l.datasetIndex]; const bar = (ds.type || c.config.type) === 'bar'; return { ...l, fillStyle: bar ? (Array.isArray(ds.backgroundColor) ? ds.backgroundColor[0] : ds.backgroundColor) : l.strokeStyle, strokeStyle: 'transparent', lineWidth: 0, borderRadius: 2 }; }) } });
+  const legend = () => ({ display: true, align: 'start', labels: { usePointStyle: false, boxWidth: 22, boxHeight: 3, padding: 20, font: { size: 14 }, generateLabels: (c) => Chart.defaults.plugins.legend.labels.generateLabels(c).map((l) => { const ds = c.data.datasets[l.datasetIndex]; const bar = (ds.type || c.config.type) === 'bar'; return { ...l, fillStyle: bar ? (Array.isArray(ds.backgroundColor) ? ds.backgroundColor[0] : ds.backgroundColor) : l.strokeStyle, strokeStyle: 'transparent', lineWidth: 0, borderRadius: 2 }; }) } });
   const charts = {};
   const chart = (id, cfg) => { if (charts[id]) charts[id].destroy(); const el = document.getElementById(id); if (!el) return null; charts[id] = new Chart(el, cfg); return charts[id]; };
   const destroyCharts = () => { Object.values(charts).forEach((c) => c.destroy()); for (const k in charts) delete charts[k]; };
