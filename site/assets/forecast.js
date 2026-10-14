@@ -1,68 +1,39 @@
-const { fmt, kpi, C, chart, axes, weekLabel } = App;
-const F = DPA.forecast, O = DPA.overview, S = DPA.products.series;
-const root = App.shell({ page: 'forecast', title: 'Forecast', subtitle: 'One-week-ahead demand, rolling-origin evaluation against simple baselines', actions: App.rangePill(F.aggregate.weeks[0], F.aggregate.weeks.at(-1)) });
-const M = Object.fromEntries(F.metrics.map((m) => [m.model, m]));
-const lgb = M.lightgbm, base = F.metrics.filter((m) => m.model !== 'lightgbm').sort((a, b) => a.wape - b.wape)[0];
-const label = (m) => ({ lightgbm: 'LightGBM', seasonal_naive: 'Seasonal naive', moving_average_4: '4-wk moving avg', moving_average_13: '13-wk moving avg' }[m] || m);
-const names = Object.fromEntries(DPA.products.rows.map((r) => [r[0], r[1]]));
-root.innerHTML = `
-<div class="grid g4">
- ${kpi({ name: 'LightGBM WAPE', sub: 'Lower is better', value: fmt.pct(lgb.wape), tone: 'o', ic: 'target' })}
- ${kpi({ name: 'Best baseline WAPE', sub: label(base.model), value: fmt.pct(base.wape), tone: 'b', ic: 'forecast' })}
- ${kpi({ name: '80% interval coverage', sub: 'Target 80%', value: fmt.pct(lgb.coverage_80), tone: 'g', ic: 'check' })}
- ${kpi({ name: 'Evaluation blocks', sub: `${F.periods.test_start} to ${F.periods.test_end}`, value: lgb.folds + ' × 4 wks', tone: 'p', ic: 'calendar' })}
-</div>
-<div class="note ${lgb.wape < base.wape ? '' : 'warn'} mt">${lgb.wape < base.wape ? 'LightGBM beats the best baseline.' : '<b>LightGBM does not beat the best baseline</b> on test WAPE, so the simple ' + label(base.model).toLowerCase() + ' is the more accurate point forecast here.'} Before each 4-week block the models are refit on rows strictly before that block, so no block sees its own targets.</div>
-<div class="grid g-wide mt">
- <div class="card"><div class="card-head"><div><h3>Total demand: actual vs forecast</h3><div class="card-sub">Sum over all products, test weeks (with 26 weeks of context)</div></div>
-  <div class="seg" id="mseg"><button data-m="lightgbm" class="on">LightGBM</button><button data-m="moving_average_4">4-wk MA</button><button data-m="seasonal_naive">Seasonal</button></div></div>
-  <div class="chart lg"><canvas id="c-agg"></canvas></div></div>
- <div class="card"><div class="card-head"><div><h3>Model comparison</h3><div class="card-sub">WAPE on the test weeks</div></div></div><div class="chart"><canvas id="c-wape"></canvas></div>
-  <table style="margin-top:8px"><thead><tr><th>Model</th><th class="num">MAE</th><th class="num">Bias</th></tr></thead><tbody>${F.metrics.map((m) => `<tr style="cursor:default"><td>${label(m.model)}</td><td class="num">${fmt.num(m.mae, 1)}</td><td class="num">${fmt.num(m.bias, 1)}</td></tr>`).join('')}</tbody></table></div>
-</div>
-<div class="grid g2 mt">
- <div class="card"><div class="card-head"><div><h3>Feature importance</h3><div class="card-sub">Mean |SHAP| — model behaviour, not causality</div></div></div><div class="chart"><canvas id="c-shap"></canvas></div></div>
- <div class="card"><div class="card-head"><div><h3>Accuracy by evaluation block</h3><div class="card-sub">WAPE per 4-week block</div></div></div><div class="chart sm"><canvas id="c-fold"></canvas></div>
-  <div class="src">The Sept–Nov test window includes the Q4 peak; seasonal naive has only the prior-year week to lean on.</div></div>
-</div>
-<div class="card mt"><div class="card-head"><div><h3>Product forecast explorer</h3><div class="card-sub">Actual units, forecast and 80% interval (top 400 products by test-period volume)</div></div>
-  <select id="psel">${Object.keys(F.products).map((c) => `<option value="${c}">${c} · ${(names[c] || '').slice(0, 34)}</option>`).join('')}</select></div>
-  <div class="chart lg"><canvas id="c-prod"></canvas></div></div>`;
-const W = O.weeks;
-function agg(model) {
-  const labels = F.context.weeks.concat(F.aggregate.weeks).map(weekLabel);
-  const pad = (a) => Array(F.context.weeks.length).fill(null).concat(a);
-  chart('c-agg', { type: 'line', data: { labels, datasets: [
-    { label: 'Actual', data: F.context.units.concat(F.aggregate.units), borderColor: C.indigo, tension: .3 },
-    { label: label(model), data: pad(F.aggregate[model]), borderColor: C.orange, tension: .3, borderDash: model === 'lightgbm' ? [] : [6, 4] }] },
-    options: { maintainAspectRatio: false, scales: axes(), plugins: { legend: App.legend(), tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${fmt.int(c.parsed.y)}` } } } } });
-}
-agg('lightgbm');
-document.querySelectorAll('#mseg button').forEach((b) => b.onclick = () => { document.querySelectorAll('#mseg button').forEach((x) => x.classList.toggle('on', x === b)); agg(b.dataset.m); });
-const order = [...F.metrics].sort((a, b) => a.wape - b.wape);
-chart('c-wape', { type: 'bar', data: { labels: order.map((m) => label(m.model)), datasets: [{ data: order.map((m) => m.wape * 100), backgroundColor: order.map((m) => m.model === 'lightgbm' ? C.orange : C.indigo + 'bb'), borderRadius: 8, maxBarThickness: 28 }] },
-  options: { indexAxis: 'y', maintainAspectRatio: false, scales: { x: { grid: App.grid, border: { display: false }, ticks: { callback: (v) => v + '%' } }, y: { grid: { display: false }, border: { display: false } } }, plugins: { tooltip: { callbacks: { label: (c) => ` WAPE ${c.parsed.x.toFixed(1)}%` } } } } });
-const pretty = (f) => f.replace(/_units$/, '').replace(/_/g, ' ');
-chart('c-shap', { type: 'bar', data: { labels: F.shap.map((s) => pretty(s.feature)), datasets: [{ data: F.shap.map((s) => s.mean_abs_shap), backgroundColor: C.violet + 'cc', borderRadius: 8, maxBarThickness: 18 }] },
-  options: { indexAxis: 'y', maintainAspectRatio: false, scales: { x: { grid: App.grid, border: { display: false } }, y: { grid: { display: false }, border: { display: false } } } } });
-chart('c-fold', { type: 'bar', data: { labels: F.by_fold.map((f) => `${weekLabel(f.from)} – ${weekLabel(f.to)}`), datasets: [{ label: 'LightGBM', data: F.by_fold.map((f) => f.lightgbm_wape * 100), backgroundColor: C.orange, borderRadius: 8, maxBarThickness: 30 }, { label: '4-wk MA', data: F.by_fold.map((f) => f.ma4_wape * 100), backgroundColor: C.indigo + 'bb', borderRadius: 8, maxBarThickness: 30 }] },
-  options: { maintainAspectRatio: false, scales: { x: { grid: { display: false }, border: { display: false } }, y: { grid: App.grid, border: { display: false }, ticks: { callback: (v) => v + '%' } } }, plugins: { legend: App.legend(), tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%` } } } } });
-function prod(code) {
-  const rows = F.products[code], first = rows[0][0], s = S[code];
-  const from = Math.max(first - 26, s ? s[0] : first), to = rows.at(-1)[0];
-  const idx = []; for (let i = from; i <= to; i++) idx.push(i);
-  const val = (i) => (s && s[1][i - s[0]] != null ? s[1][i - s[0]] : null);
-  const at = Object.fromEntries(rows.map((r) => [r[0], r]));
-  chart('c-prod', { type: 'line', data: { labels: idx.map((i) => weekLabel(W[i])), datasets: [
-    { label: 'Lower 80%', data: idx.map((i) => at[i]?.[3] ?? null), borderColor: 'transparent', pointRadius: 0, tension: .3 },
-    { label: '80% interval', data: idx.map((i) => at[i]?.[4] ?? null), borderColor: 'transparent', backgroundColor: C.orange + '26', fill: '-1', pointRadius: 0, tension: .3 },
-    { label: 'Actual', data: idx.map(val), borderColor: C.indigo, tension: .3 },
-    { label: 'LightGBM', data: idx.map((i) => at[i]?.[2] ?? null), borderColor: C.orange, tension: .3, spanGaps: true },
-    { label: '4-wk MA', data: idx.map((i) => at[i]?.[5] ?? null), borderColor: C.grey, borderDash: [5, 4], tension: .3, spanGaps: true }] },
-    options: { maintainAspectRatio: false, scales: axes((v) => fmt.int(v)), plugins: { legend: { ...App.legend(), labels: { ...App.legend().labels, filter: (l) => l.text !== 'Lower 80%' } }, tooltip: { filter: (t) => t.dataset.label !== 'Lower 80%' } } } });
-}
-const sel = document.getElementById('psel');
-sel.onchange = () => prod(sel.value);
-const want = decodeURIComponent(location.hash.slice(1));
-if (F.products[want]) sel.value = want;
-prod(sel.value);
+const { fmt, tile, art, card, banner, chart, axes, legend, col, withAlpha, weekLabel } = App;
+const F = DPA.forecast, O = DPA.overview, D = F.diagnostics;
+const M = Object.fromEntries(F.metrics.map((m) => [m.model, m])), L = { lightgbm: 'LightGBM', seasonal_naive: 'Seasonal naive', moving_average_4: '4-week average', moving_average_13: '13-week average' };
+const lgb = M.lightgbm, base = F.metrics.filter((m) => m.model !== 'lightgbm').sort((a, b) => a.wape - b.wape)[0], wins = lgb.wape < base.wape;
+App.page({ id: 'forecast', title: 'Forecast', sub: 'One-week-ahead unit demand per product, evaluated by rolling origin against simple baselines.', tags: [`Test ${F.periods.test_start} to ${F.periods.test_end}`, `${lgb.folds} refit blocks of 4 weeks`, 'WAPE = total absolute error ÷ total actual units'] }, (root) => {
+  const C = col();
+  root.innerHTML = `
+  ${banner(wins ? '<b>LightGBM beats the best baseline</b> on test WAPE.' : `<b>LightGBM does not beat the best baseline.</b> The ${L[base.model].toLowerCase()} has the lower test WAPE (${fmt.pct(base.wape)} against ${fmt.pct(lgb.wape)}), so it is the more accurate point forecast here. Before each 4-week block the models are refit on rows strictly before that block.`)}
+  <div class="grid g4 mt">
+    ${tile({ cls: 'green mini', label: 'LightGBM WAPE', value: fmt.pct(lgb.wape), text: 'all test product-weeks', art: art.waves(5) })}
+    ${tile({ cls: 'amber mini', label: 'Best baseline', value: fmt.pct(base.wape), text: L[base.model], art: art.bars() })}
+    ${tile({ cls: 'coral mini', label: 'Interval coverage', value: fmt.pct(lgb.coverage_80), text: 'target 80%', art: art.arcs() })}
+    ${tile({ cls: 'slate mini', label: 'November WAPE', value: fmt.pct(D.peak.lightgbm), text: `${D.peak.weeks} peak weeks · baseline ${fmt.pct(D.peak.moving_average_4)}`, art: art.rings() })}</div>
+  <div class="grid g-wide mt">
+    ${card('Total demand: actual vs forecast', 'Sum over all products, with 26 weeks of context', '<div class="chart xl"><canvas id="c-agg"></canvas></div>', { tools: '<div class="seg" id="mseg"><button data-m="lightgbm" class="on">LightGBM</button><button data-m="moving_average_4">4-wk avg</button><button data-m="seasonal_naive">Seasonal</button></div>' })}
+    ${card('Model comparison', 'Test WAPE', '<div class="chart sm"><canvas id="c-wape"></canvas></div><table style="margin-top:6px"><thead><tr><th>Model</th><th class="num">MAE</th><th class="num">Bias</th></tr></thead><tbody>' + F.metrics.map((m) => `<tr style="cursor:default"><td>${L[m.model]}</td><td class="num">${fmt.num(m.mae, 1)}</td><td class="num">${fmt.num(m.bias, 1)}</td></tr>`).join('') + '</tbody></table>')}</div>
+  <div class="grid g3 mt">
+    ${card('Error by demand tier', 'WAPE; tiers from average training-period volume', '<div class="chart"><canvas id="c-tier"></canvas></div>')}
+    ${card('Weekly accuracy', 'WAPE per test week', '<div class="chart"><canvas id="c-weekly"></canvas></div>')}
+    ${card('Interval calibration', 'Share inside the 80% interval, by tier', '<div class="chart"><canvas id="c-cal"></canvas></div>')}</div>
+  <div class="grid g3 mt">
+    ${card('Error distribution', 'Forecast minus actual per product-week, units (clipped at ±60)', '<div class="chart"><canvas id="c-res"></canvas></div>')}
+    ${card('Predicted vs actual', 'Sample of 1,500 product-weeks with sales (log scales)', '<div class="chart"><canvas id="c-sc"></canvas></div>')}
+    ${card('Feature importance', 'Mean |SHAP|. Describes the model, not causes.', '<div class="chart"><canvas id="c-shap"></canvas></div>')}</div>`;
+  const agg = (m) => { const pre = F.context.weeks.length; chart('c-agg', { type: 'line', data: { labels: F.context.weeks.concat(F.aggregate.weeks).map(weekLabel), datasets: [{ label: 'Actual', data: F.context.units.concat(F.aggregate.units), borderColor: C.green, tension: .3 }, { label: L[m], data: Array(pre).fill(null).concat(F.aggregate[m]), borderColor: C.orange, borderDash: m === 'lightgbm' ? [] : [6, 4], tension: .3 }] }, options: { maintainAspectRatio: false, scales: axes(), plugins: { legend: legend(), tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${fmt.int(c.parsed.y)}` } } } } }); };
+  agg('lightgbm');
+  document.querySelectorAll('#mseg button').forEach((b) => (b.onclick = () => { document.querySelectorAll('#mseg button').forEach((x) => x.classList.toggle('on', x === b)); agg(b.dataset.m); }));
+  const order = [...F.metrics].sort((a, b) => a.wape - b.wape);
+  chart('c-wape', { type: 'bar', data: { labels: order.map((m) => L[m.model]), datasets: [{ data: order.map((m) => m.wape * 100), backgroundColor: order.map((m) => (m.model === 'lightgbm' ? C.orange : withAlpha(C.green, 0.75))), borderRadius: 4, maxBarThickness: 22 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, scales: { x: { ...axes().y, ticks: { callback: (v) => v + '%' } }, y: { grid: { display: false }, border: { display: false } } }, plugins: { tooltip: { callbacks: { label: (c) => ` WAPE ${c.parsed.x.toFixed(1)}%` } } } } });
+  const tiers = ['High volume', 'Medium volume', 'Low volume'].map((t) => D.by_tier.find((x) => x.tier === t)).filter(Boolean);
+  chart('c-tier', { type: 'bar', data: { labels: tiers.map((t) => t.tier), datasets: [{ label: 'LightGBM', data: tiers.map((t) => t.lightgbm * 100), backgroundColor: C.orange, borderRadius: 4, maxBarThickness: 26 }, { label: '4-week average', data: tiers.map((t) => t.moving_average_4 * 100), backgroundColor: withAlpha(C.green, 0.75), borderRadius: 4, maxBarThickness: 26 }, { label: 'Seasonal naive', data: tiers.map((t) => t.seasonal_naive * 100), backgroundColor: withAlpha(C.slate, 0.6), borderRadius: 4, maxBarThickness: 26 }] }, options: { maintainAspectRatio: false, scales: { x: { grid: { display: false }, border: { display: false } }, y: { ...axes().y, ticks: { callback: (v) => v + '%' } } }, plugins: { legend: legend(), tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%` } } } } });
+  chart('c-weekly', { type: 'line', data: { labels: D.weekly.weeks.map(weekLabel), datasets: [{ label: 'LightGBM', data: D.weekly.lightgbm.map((v) => v * 100), borderColor: C.orange, tension: .3 }, { label: '4-week average', data: D.weekly.moving_average_4.map((v) => v * 100), borderColor: C.green, tension: .3 }] }, options: { maintainAspectRatio: false, scales: { x: { ...axes().x, ticks: { maxTicksLimit: 6 } }, y: { ...axes().y, ticks: { callback: (v) => v + '%' } } }, plugins: { legend: legend() } } });
+  chart('c-cal', { type: 'bar', data: { labels: tiers.map((t) => t.tier), datasets: [{ label: 'Coverage', data: tiers.map((t) => t.coverage * 100), backgroundColor: withAlpha(C.slate, 0.8), borderRadius: 4, maxBarThickness: 36 }] }, options: { maintainAspectRatio: false, scales: { x: { grid: { display: false }, border: { display: false } }, y: { ...axes().y, min: 0, max: 100, ticks: { callback: (v) => v + '%' } } }, plugins: { tooltip: { callbacks: { label: (c) => ` ${c.parsed.y.toFixed(1)}% inside the interval (target 80%)` } } } }, plugins: [{ id: 'target', afterDatasetsDraw(ch) { const y = ch.scales.y.getPixelForValue(80), { left, right } = ch.chartArea, g = ch.ctx; g.save(); g.strokeStyle = C.orange; g.setLineDash([5, 4]); g.beginPath(); g.moveTo(left, y); g.lineTo(right, y); g.stroke(); g.restore(); } }] });
+  const e = D.residual_hist.edges, mid = e.slice(0, -1).map((v, i) => `${v}`);
+  chart('c-res', { type: 'bar', data: { labels: mid, datasets: [{ label: 'LightGBM', data: D.residual_hist.lightgbm, backgroundColor: withAlpha(C.orange, 0.85), borderRadius: 2 }, { label: '4-week average', data: D.residual_hist.moving_average_4, backgroundColor: withAlpha(C.green, 0.55), borderRadius: 2 }] }, options: { maintainAspectRatio: false, scales: { x: { ...axes().x, ticks: { maxTicksLimit: 7, maxRotation: 0 } }, y: axes().y }, plugins: { legend: legend() } } });
+  chart('c-sc', { type: 'scatter', data: { datasets: [{ data: D.scatter.map((p) => ({ x: Math.max(p[0], 1), y: Math.max(p[1], 0.5) })), backgroundColor: withAlpha(C.green, 0.4), pointRadius: 2.5 }, { type: 'line', data: [{ x: 1, y: 1 }, { x: 5000, y: 5000 }], borderColor: C.orange, borderDash: [4, 4], pointRadius: 0 }] }, options: { maintainAspectRatio: false, interaction: { mode: 'nearest' }, scales: { x: { type: 'logarithmic', grid: { color: C.grid }, title: { display: true, text: 'Actual units' } }, y: { type: 'logarithmic', grid: { color: C.grid }, border: { display: false }, title: { display: true, text: 'Forecast' } } }, plugins: { tooltip: { callbacks: { label: (c) => ` actual ${c.parsed.x}, forecast ${c.parsed.y}` } } } } });
+  const pretty = (f) => f.replace(/_units$/, '').replace(/_/g, ' ');
+  chart('c-shap', { type: 'bar', data: { labels: F.shap.slice(0, 10).map((s) => pretty(s.feature)), datasets: [{ data: F.shap.slice(0, 10).map((s) => s.mean_abs_shap), backgroundColor: withAlpha(C.violet, 0.8), borderRadius: 4, maxBarThickness: 16 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, scales: { x: axes().y, y: { grid: { display: false }, border: { display: false } } } } });
+});

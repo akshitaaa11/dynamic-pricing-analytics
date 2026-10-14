@@ -35,6 +35,88 @@ def _records(frame: pd.DataFrame) -> list[list[Any]]:
     return [[_clean(v) for v in row] for row in frame.itertuples(index=False, name=None)]
 
 
+def _forecast_diagnostics(predictions: pd.DataFrame, features: pd.DataFrame, config: dict[str, Any]) -> dict[str, Any]:
+    """Residual distribution, calibration and error by demand tier / peak weeks for the test period."""
+    pred = predictions.copy()
+    train_end = pd.Timestamp(config["periods"]["train_end"])
+    history = features[(features["week_start"] <= train_end) & features["in_training"].astype(bool)]
+    volume = history.groupby("Stock_Code")["units"].mean()
+    tiers = pd.qcut(volume.rank(method="first"), 3, labels=["Low volume", "Medium volume", "High volume"])
+    pred["tier"] = pred["Stock_Code"].map(tiers).astype(object).fillna("No history")
+
+    def wape(frame: pd.DataFrame, column: str) -> float:
+        total = frame["units"].sum()
+        return float((frame[column] - frame["units"]).abs().sum() / total) if total else float("nan")
+
+    by_tier = []
+    for tier, g in pred.groupby("tier"):
+        inside = (g["units"] >= g["lower_80"]) & (g["units"] <= g["upper_80"])
+        by_tier.append({"tier": tier, "rows": int(len(g)), "units": float(g["units"].sum()), "lightgbm": wape(g, "lightgbm"),
+                        "moving_average_4": wape(g, "moving_average_4"), "seasonal_naive": wape(g, "seasonal_naive"),
+                        "coverage": float(inside.mean())})
+    peak = pred[pred["week_start"].dt.month == 11]
+    edges = np.linspace(-60, 60, 25)
+    clipped = (pred["lightgbm"] - pred["units"]).clip(-59.99, 59.99)
+    clipped_ma = (pred["moving_average_4"] - pred["units"]).clip(-59.99, 59.99)
+    hist = np.histogram(clipped, bins=edges)[0]
+    hist_ma = np.histogram(clipped_ma, bins=edges)[0]
+    sample = pred[(pred["units"] > 0)].sample(min(1500, int((pred["units"] > 0).sum())), random_state=7)
+    weekly = pred.groupby("week_start").apply(
+        lambda g: pd.Series({"lightgbm": wape(g, "lightgbm"), "moving_average_4": wape(g, "moving_average_4"),
+                             "coverage": float(((g["units"] >= g["lower_80"]) & (g["units"] <= g["upper_80"])).mean())}),
+        include_groups=False).reset_index()
+    return {
+        "by_tier": by_tier,
+        "peak": {"weeks": int(peak["week_start"].nunique()), "lightgbm": wape(peak, "lightgbm"),
+                 "moving_average_4": wape(peak, "moving_average_4"), "seasonal_naive": wape(peak, "seasonal_naive")},
+        "residual_hist": {"edges": edges.tolist(), "lightgbm": hist.tolist(), "moving_average_4": hist_ma.tolist()},
+        "scatter": [[int(a), round(float(b), 1)] for a, b in zip(sample["units"], sample["lightgbm"])],
+        "weekly": {"weeks": [str(pd.Timestamp(w).date()) for w in weekly["week_start"]],
+                   "lightgbm": weekly["lightgbm"].round(4).tolist(), "moving_average_4": weekly["moving_average_4"].round(4).tolist(),
+                   "coverage": weekly["coverage"].round(4).tolist()},
+    }
+
+
+def _customers(root: Path, config: dict[str, Any]) -> dict[str, Any]:
+    """Country mix, order timing, customer activity and order sizes from sale rows in the silver table."""
+    cols = ["Invoice_No", "Customer_ID", "Country", "Quantity", "Unit_Price", "Invoice_DateTime"]
+    t = pd.read_parquet(root / config["paths"]["silver_dir"] / "transactions_clean.parquet", columns=cols)
+    t["Invoice_No"] = t["Invoice_No"].astype(str)
+    t = t[~t["Invoice_No"].str.startswith("C") & (t["Quantity"] > 0)].copy()
+    t["Country"] = t["Country"].astype(str)
+    t["revenue"] = t["Quantity"] * t["Unit_Price"]
+    t["month"] = t["Invoice_DateTime"].dt.to_period("M").astype(str)
+    country = t.groupby("Country").agg(revenue=("revenue", "sum"), orders=("Invoice_No", "nunique"),
+                                       customers=("Customer_ID", "nunique")).sort_values("revenue", ascending=False)
+    top = country.head(8)
+    other = country.iloc[8:]
+    countries = [[c, float(r.revenue), int(r.orders), int(r.customers)] for c, r in top.iterrows()]
+    countries.append(["Other", float(other["revenue"].sum()), int(other["orders"].sum()), int(other["customers"].sum())])
+    inv = t.groupby("Invoice_No").agg(revenue=("revenue", "sum"), units=("Quantity", "sum"), time=("Invoice_DateTime", "min"),
+                                      customer=("Customer_ID", "first"))
+    heat = np.zeros((7, 24))
+    counts = inv.groupby([inv["time"].dt.dayofweek, inv["time"].dt.hour]).size()
+    for (d, h), n in counts.items():
+        heat[int(d), int(h)] = int(n)
+    value_edges = [0, 50, 100, 200, 300, 500, 1000, 2000, 5000, 1e9]
+    value_hist = np.histogram(inv["revenue"], bins=value_edges)[0]
+    monthly = t.groupby("month").agg(customers=("Customer_ID", "nunique"), orders=("Invoice_No", "nunique"), revenue=("revenue", "sum"))
+    identified = inv.dropna(subset=["customer"])
+    per_customer = identified.groupby("customer").size()
+    return {
+        "kpis": {"orders": int(len(inv)), "customers": int(identified["customer"].nunique()), "aov": float(inv["revenue"].mean()),
+                 "median_order": float(inv["revenue"].median()), "units_per_order": float(inv["units"].mean()),
+                 "repeat_rate": float((per_customer >= 2).mean()), "uk_share": float(country.loc["United Kingdom", "revenue"] / country["revenue"].sum()),
+                 "no_customer_id_share": float(inv["customer"].isna().mean())},
+        "countries": countries,
+        "heat": heat.astype(int).tolist(),
+        "order_value_hist": {"edges": value_edges[:-1] + ["5000+"], "counts": value_hist.tolist()},
+        "monthly": {"labels": monthly.index.tolist(), "customers": monthly["customers"].tolist(),
+                    "orders": monthly["orders"].tolist(), "revenue": monthly["revenue"].round(0).tolist()},
+        "orders_per_customer": [[k, int(v)] for k, v in per_customer.clip(upper=10).value_counts().sort_index().items()],
+    }
+
+
 def export_site_data(root: Path | None = None) -> dict[str, int]:
     root = root or Path(__file__).resolve().parents[2]
     config = yaml.safe_load((root / "configs" / "pipeline.yaml").read_text(encoding="utf-8"))
@@ -116,7 +198,9 @@ def export_site_data(root: Path | None = None) -> dict[str, int]:
                for w, u, p, lo, hi, m4 in zip(g["week_start"], g["units"], g["lightgbm"], g["lower_80"], g["upper_80"], g["moving_average_4"])]
         for code, g in prod_pred.groupby("Stock_Code")
     }
+    diagnostics = _forecast_diagnostics(predictions, features, config)
     _write(out / "forecast.js", "forecast", {
+        "diagnostics": diagnostics,
         "metrics": json.loads(metrics.to_json(orient="records")),
         "shap": json.loads(shap.to_json(orient="records")),
         "aggregate": {"weeks": [str(pd.Timestamp(w).date()) for w in agg["week_start"]],
@@ -135,7 +219,7 @@ def export_site_data(root: Path | None = None) -> dict[str, int]:
         priced, left_on="Stock_Code", right_index=True, how="left")
     cols = ["Stock_Code", "current_price", "recommended_price", "percent_change", "hold", "confidence", "reason",
             "expected_units", "revenue_gain", "revenue_gain_low", "revenue_gain_high", "binding_guardrail",
-            "elasticity", "ci_lower", "ci_upper", "identified", "n_weeks", "min", "max"]
+            "elasticity", "ci_lower", "ci_upper", "identified", "n_weeks", "min", "max", "raw_elasticity", "n_distinct_prices"]
     table["hold"] = table["hold"].astype(bool)
     table["identified"] = table["identified"].fillna(False).astype(bool)
     changes = table.loc[~table["hold"], "percent_change"]
@@ -180,6 +264,10 @@ def export_site_data(root: Path | None = None) -> dict[str, int]:
         "rows": _records(by_product[["Stock_Code", "name", "units", "revenue", "avg_price", "weeks", "zero_weeks"]]),
         "series": series,
     })
+
+    # ---- customers and orders ----
+    _write(out / "customers.js", "customers", _customers(root, config))
+    _write(out / "search.js", "search", {"rows": _records(by_product[["Stock_Code", "name"]])})
 
     # ---- data card ----
     quality = config["quality"]
