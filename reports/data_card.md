@@ -1,34 +1,31 @@
 # Data card
 
-## Scope
-This project uses the online retail dataset described in README §2 and §12. The analysis uses the cleaned silver table `data/silver/transactions_clean.parquet` and the derived product-week and feature tables created from that dataset.
+## Dataset and lineage
 
-## Data lineage
-- Raw source: UCI Online Retail II workbook (2009-2011)
-- Bronze: raw ingestion output if present in a local clone
-- Silver: cleaned and reconciled transactions
-- Gold: demand panel, feature dataset, pricing outputs, and live stream summaries
+The source is the UCI Online Retail II dataset described in [README §2](../README.md#2-the-dataset-what-we-actually-have). This rebuild starts from the configured cleaned silver Parquet table. No external market, inventory, competitor, promotion, or cost data is merged into the retailer dataset.
 
-## Key characteristics
-- Rows: 1,033,062 clean rows
-- Sales rows: 1,015,088
-- Gross units: 11,221,957
-- Gross revenue: £19,700,954.44
-- Cancellation value: −£719,692.94
-- Time span: 2009-12-01 to 2011-12-09
-- Products: 4,739 stock codes
+| Measurement | Recomputed value |
+|---|---:|
+| Clean transaction rows | 1,033,062 |
+| Sale rows | 1,015,088 |
+| Gross sale units | 11,221,957 |
+| Gross sale revenue | £19,700,954.46 |
+| Cancellation value | £-719,692.94 |
+| Product-week rows | 322,722 |
+| Zero-filled product-week rows | 127,655 |
+| Possibly-unavailable proxy rows | 54,928 |
+| Feature rows | 322,722 |
 
-## Data limitations and proxies
-The project follows the README’s rule that missing factors are not invented.
+## Derived-table lineage
 
-- Inventory / stock availability is handled with an availability proxy derived from real zero-sale patterns and is labelled as a proxy.
-- Competitor prices are not available and are shown as not available.
-- Promotions are not available; observed markdowns are labelled as observed markdowns, not promotions.
-- Costs are not available; revenue is optimized rather than profit.
-- External factors not present in the data remain unavailable rather than simulated.
+- Product-week panel: `data/gold/product_week_panel.parquet`
+- Feature table: `data/gold/product_week_features.parquet`
+- Forecast holdout predictions: `data/gold/forecast_predictions.parquet`
+- Figures: `reports/figures/`
 
-## Quality checks
-The project runs validation rules for row counts, signed quantity handling, price ranges, product-week uniqueness, and leakage checks. The tests in `tests/` cover these requirements.
+## Limitations
 
-## Model-use note
-The forecast and pricing outputs are computed from observed dataset features and documented proxies only. Any recommendation is explicitly model-based and not a measured business result.
+The availability indicator is a **proxy** inferred from observed sales gaps; it is not inventory data. Competitor prices, promotions, and costs are unavailable. Observed markdowns are not labelled as promotions. Revenue is not profit. The silver source does not retain rejected raw rows, so this rebuild cannot regenerate historical rejection counts or row-level exclusion reasons from silver alone.
+
+Of 4,717 products, 2,077 have an identified elasticity (at least 3 distinct list prices, enough weeks, and a 90% interval entirely below zero; pooled fixed-effects slope -0.956). 139 receive a price change (median -5.0%, range -10.0% to +10.0%) and 4,578 are held, each with a reason in `data/gold/pricing/recommendations.parquet`. Revenue changes are estimates under the model, not measured results. Held-out check on 2,936 real test-period price changes (elasticities fitted before 2011-09-05): predicted and actual demand moved in the same direction 63.6% of the time (rank correlation 0.346).
+

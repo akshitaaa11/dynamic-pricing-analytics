@@ -1,28 +1,28 @@
 # Final project report
 
 ## Summary
-This project implements a Spark-based dynamic pricing analytics workflow for the UCI Online Retail II dataset. It follows the phase plan in README §16, keeps thresholds and dates in `configs/pipeline.yaml`, and uses only observed data plus documented proxies.
 
-## Phase 8 status
+This project rebuilds the data-driven demand analytics workflow from the cleaned silver Parquet input. The verified test suite passes before artifact generation. Data preparation and feature generation use PySpark; a LightGBM one-week global model is compared against seasonal-naive and moving-average baselines using a chronological split.
 
-The packaging/rebuild work is in progress. The complete test suite passed with 17 tests. The end-to-end rebuild generated product-week and feature Parquet outputs, then was stopped before model training and report generation completed. Therefore the Phase 8 clean-rebuild exit check has **not passed**, and this report does not claim that all outputs were reproduced.
+## Data findings
 
-Run `make all` to continue the build and generate the model evaluation, pricing output, figures, and computed report cards.
+The transaction reconciliation and derived panel counts are recomputed in [the data card](./data_card.md). Demand seasonality evidence is generated as [monthly demand](./figures/monthly_demand.html) and [weekly demand](./figures/weekly_demand.html); each figure states its source table and date range.
 
-## Data constraints respected
-- No invented inventory, competitor, promotion, or cost data
-- No hard-coded totals in code or dashboard output
-- Use of only the documented proxies described by the README
-- Strict time-based split with no leakage from the target week or later
+## Forecast evaluation
 
-## Validation
-The test command `python -m pytest -q` passed: 17 tests passed. This verifies the automated tests, but does not substitute for the incomplete end-to-end rebuild.
+| Model | WAPE | MAE | Bias |
+|---|---:|---:|---:|
+| lightgbm | 0.6648 | 32.8565 | -1.6233 |
+| seasonal_naive | 0.9591 | 47.3972 | 9.3923 |
+| moving_average_4 | 0.6457 | 31.9104 | -5.1386 |
+| moving_average_13 | 0.6515 | 32.1952 | -9.6642 |
 
-## Deliverables
-- `README.md`: project specification and build order
-- `configs/pipeline.yaml`: configuration for thresholds, dates, and guardrails
-- `src/dpa`: Spark ETL, feature engineering, modeling, pricing, and streaming code
-- `dashboard/app.py`: Streamlit dashboard
-- `reports/data_card.md`: dataset description and limitations
-- `reports/model_card.md`: forecasting model summary
-- `CHANGELOG.md`: phase-by-phase progress log
+The model does not beat the best baseline (moving_average_4) on test WAPE. Full methodology and caveats are in [the model card](./model_card.md).
+
+## Reproducible commands
+
+Run `make all` to test and rebuild gold Parquet tables, the forecast artifacts, and report figures from the configured silver dataset. Start the dashboard separately with `make dashboard`.
+
+## Limitations
+
+The availability flag is a **proxy**, not inventory. Competitor prices, promotion labels, and costs are unavailable; revenue estimates are not profit. The streaming implementation is a historical replay, not a live retailer feed. See [README §13](../README.md#13-limitations).

@@ -23,7 +23,7 @@ htmlcov/
 !/data/reference/.gitkeep
 
 # Output and models
-models/
+/models/
 *.joblib
 *.pkl
 *.bin
