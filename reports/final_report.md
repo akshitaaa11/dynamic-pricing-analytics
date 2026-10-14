@@ -12,7 +12,7 @@ The transaction reconciliation and derived panel counts are recomputed in [the d
 
 | Model | WAPE | MAE | Bias |
 |---|---:|---:|---:|
-| lightgbm | 0.6797 | 33.5916 | -1.6123 |
+| lightgbm | 0.6648 | 32.8565 | -1.6233 |
 | seasonal_naive | 0.9591 | 47.3972 | 9.3923 |
 | moving_average_4 | 0.6457 | 31.9104 | -5.1386 |
 | moving_average_13 | 0.6515 | 32.1952 | -9.6642 |
