@@ -5,9 +5,13 @@ This project implements a Spark-based dynamic pricing analytics workflow for the
 
 ## Phase 8 status
 
-The packaging/rebuild work is in progress. The complete test suite passed with 17 tests. The end-to-end rebuild generated product-week and feature Parquet outputs, then was stopped before model training and report generation completed. Therefore the Phase 8 clean-rebuild exit check has **not passed**, and this report does not claim that all outputs were reproduced.
+The Phase 8 exit check (`make all` from the documented raw/silver input) has **not passed yet**. What changed in this revision:
 
-Run `make all` to continue the build and generate the model evaluation, pricing output, figures, and computed report cards.
+- **Root-cause fix:** `src/dpa/models/` (baselines, evaluate, forecast) was never committed because the `models/` rule in `.gitignore` matched it. A fresh checkout therefore could not import `dpa.pipeline`. The rule is now root-anchored (`/models/`) and the package is committed.
+- New tests cover the baselines, metrics, and an end-to-end model training/evaluation run on synthetic data.
+- **Not done:** the end-to-end rebuild on the real dataset. `data/silver/transactions_clean.parquet` and `data/raw/online_retail_II.xlsx` are not in the repository, and the UCI download host was blocked from the build sandbox. Six data-dependent tests (phases 1-3) fail only for that reason; the other 13 tests pass. No metrics are reported here because none were computed from real data.
+
+To finish: place the workbook at `data/raw/online_retail_II.xlsx` (or the cleaned silver Parquet), then run `make all`. That regenerates the gold tables, forecast metrics, pricing holds, figures and the data/model cards, and overwrites this report with computed values.
 
 ## Data constraints respected
 - No invented inventory, competitor, promotion, or cost data
@@ -16,7 +20,7 @@ Run `make all` to continue the build and generate the model evaluation, pricing 
 - Strict time-based split with no leakage from the target week or later
 
 ## Validation
-The test command `python -m pytest -q` passed: 17 tests passed. This verifies the automated tests, but does not substitute for the incomplete end-to-end rebuild.
+`python -m pytest -q` without the dataset: 13 passed, 6 failed (missing data files). This does not substitute for the end-to-end rebuild.
 
 ## Deliverables
 - `README.md`: project specification and build order
