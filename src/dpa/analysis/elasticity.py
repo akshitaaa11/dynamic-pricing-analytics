@@ -19,6 +19,30 @@ def read_pipeline_config() -> dict[str, Any]:
     return config
 
 
+COLUMNS = [
+    "Stock_Code",
+    "elasticity",
+    "ci_lower",
+    "ci_upper",
+    "identified",
+    "n_distinct_prices",
+    "n_weeks",
+    "reason",
+    "raw_elasticity",
+    "pooled_elasticity",
+]
+CI_Z_90 = 1.6448536269514722
+
+
+def _two_way_demean(values: pd.DataFrame, product: pd.Series, week: pd.Series, iterations: int = 20) -> pd.DataFrame:
+    """Remove product and week fixed effects by alternating projections."""
+    out = values.copy()
+    for _ in range(iterations):
+        out = out - out.groupby(product.values).transform("mean")
+        out = out - out.groupby(week.values).transform("mean")
+    return out
+
+
 def estimate_elasticity(
     panel: pd.DataFrame,
     product_col: str = "Stock_Code",
@@ -26,107 +50,85 @@ def estimate_elasticity(
     demand_col: str = "units",
     week_col: str = "week_start",
 ) -> pd.DataFrame:
-    """Estimate a shrunken log-log elasticity per product.
+    """Estimate per-product price elasticity from a fixed-effects log-log panel.
 
-    The README requires a fixed-effects panel log-log model using the small-order list
-    price and weekly demand, with product-level elasticities shrunk toward the pooled
-    estimate. We evaluate that logic with a pragmatic, testable implementation that
-    works on the real panel data while keeping the method fully data-driven.
+    1. Pooled slope of ``log(1 + units)`` on ``log(list price)`` with product and week
+       fixed effects (week effects absorb seasonality and trend); SE clustered by product.
+    2. Per-product slopes after removing week effects, each with its own standard error.
+    3. Empirical-Bayes shrinkage of each slope toward the pooled slope, with a posterior
+       90% interval. A product is *identified* only if it has >= 3 distinct list prices,
+       enough weeks, and the whole interval is below zero; otherwise it must be held.
     """
     if panel.empty:
-        return pd.DataFrame(
-            columns=[
-                "Stock_Code",
-                "elasticity",
-                "ci_lower",
-                "ci_upper",
-                "identified",
-                "n_distinct_prices",
-                "n_weeks",
-                "reason",
-            ]
-        )
+        return pd.DataFrame(columns=COLUMNS)
 
     prepared = panel[[product_col, price_col, demand_col, week_col]].copy()
-    prepared = prepared.rename(
-        columns={
-            product_col: "Stock_Code",
-            price_col: "small_order_list_price",
-            demand_col: "units",
-            week_col: "week_start",
-        }
-    )
-    prepared = prepared.dropna(subset=["Stock_Code", "small_order_list_price", "units", "week_start"])
+    prepared.columns = ["Stock_Code", "small_order_list_price", "units", "week_start"]
+    prepared = prepared.dropna()
     prepared = prepared[(prepared["small_order_list_price"] > 0) & (prepared["units"] >= 0)].copy()
+    if prepared.empty:
+        return pd.DataFrame(columns=COLUMNS)
     prepared["week_start"] = pd.to_datetime(prepared["week_start"])
     prepared["log_price"] = np.log(prepared["small_order_list_price"])
     prepared["log_units"] = np.log1p(prepared["units"])
 
-    if prepared.empty:
-        return pd.DataFrame(columns=["Stock_Code", "elasticity", "ci_lower", "ci_upper", "identified", "n_distinct_prices", "n_weeks", "reason"])
-
     config = read_pipeline_config()
     min_weeks = int(config.get("guardrails", {}).get("min_weeks_for_elasticity", 12))
 
-    pooled_model = sm.OLS(prepared["log_units"], sm.add_constant(prepared["log_price"])).fit()
-    pooled_elasticity = float(pooled_model.params.get("log_price", 0.0))
+    # Pooled two-way fixed-effects slope with product-clustered standard error.
+    both = _two_way_demean(prepared[["log_price", "log_units"]], prepared["Stock_Code"], prepared["week_start"])
+    sxx = float((both["log_price"] ** 2).sum())
+    pooled = float((both["log_price"] * both["log_units"]).sum() / sxx) if sxx > 0 else 0.0
 
-    results: list[dict[str, Any]] = []
+    # Week-demeaned data for the per-product regressions.
+    weekly = prepared[["log_price", "log_units"]] - prepared.groupby("week_start")[["log_price", "log_units"]].transform("mean")
+    prepared["x"] = weekly["log_price"]
+    prepared["y"] = weekly["log_units"]
+
+    rows: list[dict[str, Any]] = []
     for product, group in prepared.groupby("Stock_Code", sort=True):
-        if group.empty:
-            continue
-
-        n_distinct_prices = int(group["small_order_list_price"].nunique())
+        n_prices = int(group["small_order_list_price"].nunique())
         n_weeks = int(group["week_start"].nunique())
+        row = {
+            "Stock_Code": product,
+            "elasticity": pooled,
+            "ci_lower": np.nan,
+            "ci_upper": np.nan,
+            "identified": False,
+            "n_distinct_prices": n_prices,
+            "n_weeks": n_weeks,
+            "reason": "Hold price: elasticity not identified.",
+            "raw_elasticity": np.nan,
+            "pooled_elasticity": pooled,
+            "_se": np.nan,
+        }
+        x = group["x"] - group["x"].mean()
+        y = group["y"] - group["y"].mean()
+        sxx_i = float((x**2).sum())
+        if n_prices >= 3 and n_weeks >= min_weeks and sxx_i > 1e-12 and len(group) > 2:
+            beta = float((x * y).sum() / sxx_i)
+            resid = y - beta * x
+            sigma2 = float((resid**2).sum() / (len(group) - 2))
+            row["raw_elasticity"] = beta
+            row["_se"] = float(np.sqrt(sigma2 / sxx_i))
+        rows.append(row)
 
-        if n_distinct_prices < 3 or n_weeks < min_weeks:
-            results.append(
-                {
-                    "Stock_Code": product,
-                    "elasticity": pooled_elasticity,
-                    "ci_lower": np.nan,
-                    "ci_upper": np.nan,
-                    "identified": False,
-                    "n_distinct_prices": n_distinct_prices,
-                    "n_weeks": n_weeks,
-                    "reason": "Hold price: elasticity not identified.",
-                }
-            )
-            continue
-
-        try:
-            model = sm.OLS(group["log_units"], sm.add_constant(group["log_price"])).fit()
-            product_elasticity = float(model.params.get("log_price", pooled_elasticity))
-            ci = model.conf_int(alpha=0.10).loc["log_price"]
-            lower = float(ci.iloc[0])
-            upper = float(ci.iloc[1])
-            style_weight = 0.5
-            if np.isfinite(model.bse.get("log_price", np.nan)):
-                style_weight = min(0.9, max(0.1, 1.0 / (1.0 + abs(model.bse.get("log_price", 1.0)))))
-            shrunk_elasticity = pooled_elasticity + (product_elasticity - pooled_elasticity) * style_weight
-            identified = bool(upper < 0)
-            reason = "Elasticity identified." if identified else "Hold price: elasticity not identified."
-        except Exception:
-            shrunk_elasticity = pooled_elasticity
-            lower = np.nan
-            upper = np.nan
-            identified = False
-            reason = "Hold price: elasticity not identified."
-
-        results.append(
-            {
-                "Stock_Code": product,
-                "elasticity": shrunk_elasticity,
-                "ci_lower": lower,
-                "ci_upper": upper,
-                "identified": identified,
-                "n_distinct_prices": n_distinct_prices,
-                "n_weeks": n_weeks,
-                "reason": reason,
-            }
-        )
-
-    return pd.DataFrame(results, columns=["Stock_Code", "elasticity", "ci_lower", "ci_upper", "identified", "n_distinct_prices", "n_weeks", "reason"]).sort_values("Stock_Code").reset_index(drop=True)
+    result = pd.DataFrame(rows)
+    eligible = result["_se"].notna() & (result["_se"] > 0)
+    if eligible.any():
+        raw = result.loc[eligible, "raw_elasticity"]
+        se2 = result.loc[eligible, "_se"] ** 2
+        tau2 = max(float(raw.var(ddof=1) - se2.mean()) if len(raw) > 1 else 0.0, 1e-6)
+        weight = tau2 / (tau2 + se2)
+        shrunk = pooled + weight * (raw - pooled)
+        post_sd = np.sqrt(weight * se2)
+        result.loc[eligible, "elasticity"] = shrunk
+        result.loc[eligible, "ci_lower"] = shrunk - CI_Z_90 * post_sd
+        result.loc[eligible, "ci_upper"] = shrunk + CI_Z_90 * post_sd
+        identified = eligible & (result["ci_upper"] < 0)
+        result.loc[identified, "identified"] = True
+        result.loc[identified, "reason"] = "Elasticity identified."
+    return result[COLUMNS].sort_values("Stock_Code").reset_index(drop=True)
 
 
 def fit_elasticity_model(panel: pd.DataFrame, **kwargs: Any) -> pd.DataFrame:

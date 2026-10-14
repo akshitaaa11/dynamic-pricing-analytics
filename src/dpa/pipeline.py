@@ -15,7 +15,7 @@ from dpa.etl.aggregate import build_demand_definition
 from dpa.etl.validate import validate_dataset
 from dpa.features.build import compute_product_week_features
 from dpa.models.forecast import train_and_evaluate
-from dpa.pricing.recommend import build_hold_recommendations
+from dpa.pricing.recommend import run_pricing
 from dpa.utils.spark import get_spark_session
 from dpa.utils.parquet import write_spark_parquet
 
@@ -71,6 +71,9 @@ def _write_reports(
     features: DataFrame,
     metrics: pd.DataFrame,
     shap_values: pd.DataFrame,
+    recommendations: pd.DataFrame,
+    elasticity: pd.DataFrame,
+    price_check: dict[str, float],
 ) -> None:
     reports_dir = root / config["paths"]["reports_dir"]
     reports_dir.mkdir(parents=True, exist_ok=True)
@@ -81,7 +84,28 @@ def _write_reports(
     lightgbm = metrics.loc[metrics["model"] == "lightgbm"].iloc[0]
     best_baseline = metrics.loc[metrics["model"] != "lightgbm"].sort_values("wape").iloc[0]
     model_wins = bool(lightgbm["wape"] < best_baseline["wape"])
-    hold_count = int(panel.select("Stock_Code").distinct().count())
+    n_products = len(recommendations)
+    n_hold = int(recommendations["hold"].sum())
+    n_change = n_products - n_hold
+    n_identified = int(elasticity["identified"].sum())
+    changes = recommendations.loc[~recommendations["hold"], "percent_change"]
+    change_summary = (
+        f"median {changes.median():+.1%}, range {changes.min():+.1%} to {changes.max():+.1%}" if n_change else "none"
+    )
+    horizon = int(config["guardrails"]["forecast_horizon_weeks"])
+    folds = int(lightgbm["folds"])
+    coverage = float(lightgbm["coverage_80"])
+    width = float(lightgbm["mean_interval_width"])
+    pooled = float(elasticity["pooled_elasticity"].iloc[0]) if len(elasticity) else float("nan")
+    pricing_summary = (
+        f"Of {n_products:,} products, {n_identified:,} have an identified elasticity (at least 3 distinct list prices, "
+        f"enough weeks, and a 90% interval entirely below zero; pooled fixed-effects slope {pooled:.3f}). "
+        f"{n_change:,} receive a price change ({change_summary}) and {n_hold:,} are held, each with a reason in "
+        f"`data/gold/pricing/recommendations.parquet`. Revenue changes are estimates under the model, not measured results. "
+        f"Held-out check on {price_check['n_price_changes']:,} real test-period price changes (elasticities fitted before "
+        f"{config['periods']['test_start']}): predicted and actual demand moved in the same direction "
+        f"{price_check['sign_agreement']:.1%} of the time (rank correlation {price_check['rank_correlation']:.3f})."
+    )
     metrics_table = "\n".join(
         f"| {row['model']} | {row['wape']:.4f} | {row['mae']:.4f} | {row['bias']:.4f} |"
         for _, row in metrics.iterrows()
@@ -120,7 +144,7 @@ The source is the UCI Online Retail II dataset described in [README §2](../READ
 
 The availability indicator is a **proxy** inferred from observed sales gaps; it is not inventory data. Competitor prices, promotions, and costs are unavailable. Observed markdowns are not labelled as promotions. Revenue is not profit. The silver source does not retain rejected raw rows, so this rebuild cannot regenerate historical rejection counts or row-level exclusion reasons from silver alone.
 
-Pricing output currently contains {hold_count:,} explicit hold decisions. The feature table retains observed weekly small-order prices, but this build does not produce the README's validated fixed-effects elasticity estimate and uncertainty range. No suggested price changes are manufactured.
+{pricing_summary}
 
 """
     (reports_dir / "data_card.md").write_text(data_card, encoding="utf-8")
@@ -133,7 +157,7 @@ One-week product demand forecasting for this historical retailer dataset. Predic
 
 ## Data and evaluation
 
-The global LightGBM Poisson model is trained using the chronological training period, uses the following validation period for early stopping, and is evaluated once on the held-out test period:
+The global LightGBM Poisson model is trained using the chronological training period, uses the following validation period for early stopping, and is evaluated on the held-out test period by rolling origin: the test period is cut into {folds} blocks of {horizon} weeks, and before each block the models are refit on every eligible row strictly before it:
 
 - Train: {config['periods']['train_start']} through {config['periods']['train_end']}
 - Validation: {config['periods']['validation_start']} through {config['periods']['validation_end']}
@@ -145,11 +169,11 @@ The model features are configured in `configs/pipeline.yaml`; they are calendar 
 |---|---:|---:|---:|
 {model_metrics_table}
 
-The LightGBM model {'beats' if model_wins else 'does not beat'} the best baseline by WAPE ({best_baseline['model']}). No prediction-interval coverage is reported because this run does not fit a quantile model. Global feature attributions are exported to `reports/global_shap_importance.csv` using LightGBM's TreeSHAP contributions; they describe model behaviour, not causality.
+The LightGBM model {'beats' if model_wins else 'does not beat'} the best baseline by WAPE ({best_baseline['model']}). The 80% prediction interval comes from separate LightGBM quantile models (10th and 90th percentile) and covered {coverage:.1%} of test product-weeks (target 80%; mean width {width:.1f} units). Global feature attributions are exported to `reports/global_shap_importance.csv` using LightGBM's TreeSHAP contributions; they describe model behaviour, not causality.
 
 ## Limitations
 
-The model uses one-week holdout predictions and does not claim a completed 4-week rolling-origin evaluation. The pricing output is conservative: every product is held because this build does not produce a validated fixed-effects elasticity estimate with uncertainty bounds. The underlying demand proxy cannot distinguish zero demand from stock unavailability. Performance represents a mostly wholesale giftware retailer in 2009–2011 and should not be generalized without further evaluation.
+Forecasts are one-week-ahead from observed lags, refit every {horizon} weeks; a separate direct {horizon}-week-ahead model is not evaluated. {pricing_summary} The underlying demand proxy cannot distinguish zero demand from stock unavailability. Performance represents a mostly wholesale giftware retailer in 2009–2011 and should not be generalized without further evaluation.
 """
     (reports_dir / "model_card.md").write_text(model_card, encoding="utf-8")
     (reports_dir / "final_report.md").write_text(
@@ -234,12 +258,19 @@ def rebuild(spark: SparkSession | None = None) -> None:
         predictions.to_parquet(gold_dir / "forecast_predictions.parquet", index=False)
         pricing_frame = features.select(
             "Stock_Code",
+            "week_start",
+            "units",
             "small_order_list_price",
+            "price_change_pct",
+            "possibly_unavailable",
+            "rolling_mean_4_units",
+            "rolling_mean_8_units",
         ).toPandas()
-        recommendations = build_hold_recommendations(pricing_frame)
+        elasticity, recommendations, price_check = run_pricing(pricing_frame, predictions, config)
         pricing_dir = gold_dir / "pricing"
         pricing_dir.mkdir(parents=True, exist_ok=True)
         recommendations.to_parquet(pricing_dir / "recommendations.parquet", index=False)
+        elasticity.to_parquet(pricing_dir / "elasticity.parquet", index=False)
         reports_dir = root / config["paths"]["reports_dir"]
         reports_dir.mkdir(parents=True, exist_ok=True)
         metrics.to_csv(reports_dir / "model_metrics.csv", index=False)
@@ -255,6 +286,9 @@ def rebuild(spark: SparkSession | None = None) -> None:
             features,
             metrics,
             shap_values,
+            recommendations,
+            elasticity,
+            price_check,
         )
         print(f"Gold tables and reports rebuilt from {silver_path}")
         print(metrics.to_string(index=False))

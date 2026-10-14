@@ -85,6 +85,10 @@ modeling:
     - lag_4_units
     - lag_8_units
     - lag_12_units
+    - rolling_mean_4_units
+    - rolling_mean_8_units
+    - rolling_mean_12_units
+    - rolling_std_4_units
     - month
     - iso_week
     - weeks_to_christmas

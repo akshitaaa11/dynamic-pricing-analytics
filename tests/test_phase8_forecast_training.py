@@ -30,6 +30,10 @@ def test_train_and_evaluate_scores_only_test_weeks(tmp_path) -> None:
     frame["weeks_since_launch"] = frame.groupby("Stock_Code").cumcount()
     for lag in (1, 2, 4, 8, 12):
         frame[f"lag_{lag}_units"] = frame.groupby("Stock_Code")["units"].shift(lag)
+    grouped = frame.groupby("Stock_Code")["units"]
+    for window in (4, 8, 12):
+        frame[f"rolling_mean_{window}_units"] = grouped.transform(lambda s: s.shift(1).rolling(window, min_periods=1).mean())
+    frame["rolling_std_4_units"] = grouped.transform(lambda s: s.shift(1).rolling(4, min_periods=2).std())
 
     predictions, metrics, shap_values = train_and_evaluate(frame, config, tmp_path / "model.txt")
 
@@ -39,3 +43,9 @@ def test_train_and_evaluate_scores_only_test_weeks(tmp_path) -> None:
     assert metrics["wape"].between(0, 5).all()
     assert set(shap_values["feature"]) == set(config["modeling"]["feature_columns"])
     assert (tmp_path / "model.txt").exists()
+    # Rolling origin: every block of horizon weeks is predicted by a model fit only on earlier weeks.
+    assert predictions["fold"].nunique() > 1
+    assert (predictions["lower_80"] <= predictions["lightgbm"]).all()
+    assert (predictions["lightgbm"] <= predictions["upper_80"]).all()
+    coverage = metrics.loc[metrics["model"] == "lightgbm", "coverage_80"].iloc[0]
+    assert 0.0 <= coverage <= 1.0

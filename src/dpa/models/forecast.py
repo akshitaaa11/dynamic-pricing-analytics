@@ -26,7 +26,7 @@ def train_and_evaluate(
     config: dict[str, Any],
     model_path: str | Path | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Fit on train, early-stop on validation, score once on test.
+    """Fit on train, early-stop on validation, then score the test period by rolling origin.
 
     Returns (test predictions, metrics per model, global SHAP importance).
     """
@@ -65,25 +65,62 @@ def train_and_evaluate(
         valid_sets=[valid_set],
         callbacks=[lgb.early_stopping(early_stopping, verbose=False)],
     )
+    best_rounds = max(int(booster.best_iteration), 1)
     if model_path is not None:
         Path(model_path).parent.mkdir(parents=True, exist_ok=True)
         booster.save_model(str(model_path))
 
-    test_x = test[features].astype(float)
-    test["lightgbm"] = np.clip(booster.predict(test_x, num_iteration=booster.best_iteration), 0, None)
+    # Rolling-origin evaluation: the test period is split into blocks of
+    # ``forecast_horizon_weeks``. Before each block the models are refit on every
+    # eligible row strictly before the block, so no block ever sees its own target.
+    horizon = int(config["guardrails"]["forecast_horizon_weeks"])
+    confidence = float(config["guardrails"]["demand_interval_confidence"])
+    low_q, high_q = (1 - confidence) / 2, 1 - (1 - confidence) / 2
+    eligible = data[data["in_training"].astype(bool)]
+    test_weeks = sorted(test["week_start"].unique())
+    fold_of_week = {week: index // horizon for index, week in enumerate(test_weeks)}
+    test["fold"] = test["week_start"].map(fold_of_week)
+    test["lightgbm"] = np.nan
+    test["lower_80"] = np.nan
+    test["upper_80"] = np.nan
+    base = {k: v for k, v in booster_params.items() if k != "objective"}
+    for fold, block in test.groupby("fold"):
+        fold_start = block["week_start"].min()
+        history = eligible[eligible["week_start"] < fold_start]
+        history_set = lgb.Dataset(history[features].astype(float), label=history["units"].astype(float))
+        block_x = block[features].astype(float)
+        mean_model = lgb.train(booster_params, history_set, num_boost_round=best_rounds)
+        test.loc[block.index, "lightgbm"] = np.clip(mean_model.predict(block_x), 0, None)
+        for column, quantile in (("lower_80", low_q), ("upper_80", high_q)):
+            quantile_set = lgb.Dataset(history[features].astype(float), label=history["units"].astype(float))
+            quantile_model = lgb.train(
+                {**base, "objective": "quantile", "alpha": quantile}, quantile_set, num_boost_round=best_rounds
+            )
+            test.loc[block.index, column] = np.clip(quantile_model.predict(block_x), 0, None)
+    test["lower_80"] = np.minimum(test["lower_80"], test["lightgbm"])
+    test["upper_80"] = np.maximum(test["upper_80"], test["lightgbm"])
 
     rows = []
     for model in ["lightgbm", *BASELINE_COLUMNS]:
         rows.append({"model": model, **calculate_metrics(test["units"], test[model])})
     metrics = pd.DataFrame(rows)
+    inside = (test["units"] >= test["lower_80"]) & (test["units"] <= test["upper_80"])
+    metrics["coverage_80"] = np.nan
+    metrics["mean_interval_width"] = np.nan
+    metrics.loc[metrics["model"] == "lightgbm", "coverage_80"] = float(inside.mean())
+    metrics.loc[metrics["model"] == "lightgbm", "mean_interval_width"] = float((test["upper_80"] - test["lower_80"]).mean())
+    metrics["folds"] = len(fold_of_week) and (max(fold_of_week.values()) + 1)
 
+    test_x = test[features].astype(float)
     contributions = booster.predict(test_x, num_iteration=booster.best_iteration, pred_contrib=True)[:, :-1]
     shap_values = (
         pd.DataFrame({"feature": features, "mean_abs_shap": np.abs(contributions).mean(axis=0)})
         .sort_values("mean_abs_shap", ascending=False)
         .reset_index(drop=True)
     )
-    predictions = test[["Stock_Code", "week_start", "units", "lightgbm", *BASELINE_COLUMNS]].reset_index(drop=True)
+    predictions = test[
+        ["Stock_Code", "week_start", "units", "fold", "lightgbm", "lower_80", "upper_80", *BASELINE_COLUMNS]
+    ].reset_index(drop=True)
     return predictions, metrics, shap_values
 
 
