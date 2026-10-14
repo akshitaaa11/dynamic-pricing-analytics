@@ -4,7 +4,8 @@ from pathlib import Path
 FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@200..500&display=swap">'
 PAGES = {
     "index": ("Overview", ["overview", "forecast", "pricing", "data", "search"], ["summary", "data", "about"]),
-    "explore": ("Demand and forecast", ["overview", "customers", "forecast", "products", "pricing", "search"], ["demand", "customers", "products", "forecast", "lab"]),
+    "demand": ("Demand", ["overview", "customers", "products", "pricing", "forecast", "search"], ["demand", "customers", "products"]),
+    "forecast": ("Forecast", ["overview", "forecast", "products", "search"], ["forecast", "lab"]),
     "pricing": ("Pricing", ["overview", "pricing", "products", "forecast", "search"], ["elasticity", "recs", "impact"]),
 }
 root = Path(__file__).parent
@@ -15,5 +16,5 @@ for name, (title, data, views) in PAGES.items():
         f"<title>{title} · Dynamic Pricing Analytics</title>{FONTS}<link rel=\"stylesheet\" href=\"assets/style.css\">"
         f'<script src="vendor/chart.umd.js"></script>{scripts}<script src="assets/app.js"></script></head><body>'
         + "".join(f'<script src="assets/{v}.js"></script>' for v in views)
-        + f'<script src="assets/{name}.js"></script></body></html>\n', encoding="utf-8")
+        + f'<script src="assets/p_{name}.js"></script></body></html>\n', encoding="utf-8")
 print("wrote", len(PAGES), "pages")

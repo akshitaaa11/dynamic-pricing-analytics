@@ -20,7 +20,7 @@
     download: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
   };
   const icon = (n) => `<svg viewBox="0 0 24 24">${ICON[n] || ''}</svg>`;
-  const NAV = [['', [['home', 'index.html', 'Overview'], ['forecast', 'explore.html', 'Demand & forecast'], ['pricing', 'pricing.html', 'Pricing']]]];
+  const NAV = [['', [['home', 'index.html', 'Overview'], ['demand', 'demand.html', 'Demand'], ['forecast', 'forecast.html', 'Forecast'], ['pricing', 'pricing.html', 'Pricing']]]];
   const fmt = {
     int: (v) => (v == null || !isFinite(v) ? '–' : Math.round(v).toLocaleString('en-GB')),
     gbp: (v, d = 2) => (v == null || !isFinite(v) ? '–' : (v < 0 ? '−' : '') + '£' + Math.abs(v).toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d })),
@@ -50,7 +50,7 @@
   function chartDefaults() {
     if (!window.Chart) return;
     const C = col(), D = Chart.defaults;
-    D.font.family = '"Outfit","Urbanist","Inter",system-ui,sans-serif'; D.font.size = 14; D.font.weight = 350;
+    D.font.family = '"Outfit","Urbanist","Inter",system-ui,sans-serif'; D.font.size = 15.5; D.font.weight = 350;
     D.color = C.muted; D.borderColor = C.grid;
     D.plugins.legend.display = false;
     Object.assign(D.plugins.tooltip, { backgroundColor: C.card, titleColor: C.ink, bodyColor: C.muted, borderColor: C.border, borderWidth: 1, padding: 11, cornerRadius: 6, boxPadding: 5, usePointStyle: true, titleFont: { weight: 400 } });
@@ -60,7 +60,7 @@
   const axes = (yFmt, o = {}) => { const C = col(); return {
     x: { grid: { color: C.grid, drawTicks: false }, border: { display: false }, ticks: { maxTicksLimit: 9, maxRotation: 0, padding: 8 }, ...(o.x || {}) },
     y: { grid: { color: C.grid, drawTicks: false }, border: { display: false }, ticks: { callback: yFmt || ((v) => fmt.compact(v)), maxTicksLimit: 6, padding: 8 }, ...(o.y || {}) } }; };
-  const legend = () => ({ display: true, align: 'start', labels: { usePointStyle: false, boxWidth: 22, boxHeight: 3, padding: 20, font: { size: 14 }, generateLabels: (c) => Chart.defaults.plugins.legend.labels.generateLabels(c).map((l) => { const ds = c.data.datasets[l.datasetIndex]; const bar = (ds.type || c.config.type) === 'bar'; return { ...l, fillStyle: bar ? (Array.isArray(ds.backgroundColor) ? ds.backgroundColor[0] : ds.backgroundColor) : l.strokeStyle, strokeStyle: 'transparent', lineWidth: 0, borderRadius: 2 }; }) } });
+  const legend = () => ({ display: true, align: 'start', labels: { usePointStyle: false, boxWidth: 22, boxHeight: 3, padding: 20, font: { size: 15.5 }, generateLabels: (c) => Chart.defaults.plugins.legend.labels.generateLabels(c).map((l) => { const ds = c.data.datasets[l.datasetIndex]; const bar = (ds.type || c.config.type) === 'bar'; return { ...l, fillStyle: bar ? (Array.isArray(ds.backgroundColor) ? ds.backgroundColor[0] : ds.backgroundColor) : l.strokeStyle, strokeStyle: 'transparent', lineWidth: 0, borderRadius: 2 }; }) } });
   const charts = {};
   const chart = (id, cfg) => { if (charts[id]) charts[id].destroy(); const el = document.getElementById(id); if (!el) return null; charts[id] = new Chart(el, cfg); return charts[id]; };
   const destroyCharts = () => { Object.values(charts).forEach((c) => c.destroy()); for (const k in charts) delete charts[k]; };
@@ -181,7 +181,7 @@
       const q = input.value.trim().toLowerCase(); const rows = (window.DPA && DPA.search && DPA.search.rows) || [];
       if (q.length < 2) { box.style.display = 'none'; return; }
       const hits = rows.filter((r) => String(r[0]).toLowerCase().includes(q) || String(r[1] || '').toLowerCase().includes(q)).slice(0, 8);
-      box.innerHTML = hits.map((r) => `<a href="explore.html#p-${encodeURIComponent(r[0])}"><span>${esc(nice(r[1]))}</span><small>${esc(r[0])}</small></a>`).join('') || '<a><small>No match</small></a>';
+      box.innerHTML = hits.map((r) => `<a href="demand.html#p-${encodeURIComponent(r[0])}"><span>${esc(nice(r[1]))}</span><small>${esc(r[0])}</small></a>`).join('') || '<a><small>No match</small></a>';
       box.style.display = 'block';
     });
     window.addEventListener('hashchange', () => { const hh = location.hash.slice(1); const t = tabs.find(([, , key]) => hh === key || hh.startsWith(key + '-')); if (t) { active = t[0]; run(); } });
