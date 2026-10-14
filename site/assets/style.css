@@ -206,28 +206,6 @@ select,input[type=text]{height:46px;font-size:16px}
 @media(max-width:980px){.main{padding:18px 16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}.g3{grid-template-columns:1fr}.chart{height:320px}.chart.lg,.chart.xl{height:360px}}
 .seg{flex-wrap:nowrap}.seg button{white-space:nowrap}
 .card-head{flex-wrap:wrap}
-/* ---- Larger type, second pass ---- */
-body{font-size:18.5px}
-.brand b{font-size:23px}.brand small{font-size:16.5px}
-.nav a{font-size:19.5px}.nav-label{font-size:13px}
-.gsearch input{font-size:17.5px;height:50px}
-.side-foot{font-size:16px}
-.head h1{font-size:38px}.head p{font-size:19.5px}
-.tabs button{font-size:19px;padding:14px 24px}
-.tags{font-size:17px}
-.card h3{font-size:23.5px}.card .sub{font-size:17px}
-.banner p{font-size:18px}.note{font-size:17.5px}.src{font-size:15.5px}
-.stat-line,.legend .row,.bar-row .l{font-size:18px}
-td{font-size:17.5px}th{font-size:15.5px}
-.tag{font-size:15px}.chip{font-size:15.5px}
-.seg button{font-size:16.5px}
-select,input[type=text]{font-size:17.5px;height:50px}.picker select{font-size:18.5px;height:58px}.picker label{font-size:17.5px}
-.tile .k{font-size:18.5px}.tile .d{font-size:17.5px;max-width:290px}.tile.mini .n{font-size:60px}.tile .n.s{font-size:64px}
-.hero-copy p.lead{font-size:21.5px}.feat .t{font-size:27px}.feat .s{font-size:17px}
-.heat{font-size:14.5px}.scale{font-size:14.5px}
-.flow .step small{font-size:15.5px}
-.pager{font-size:16.5px}.sim-out b{font-size:26px}.sim-out small{font-size:15.5px}
-.results a{font-size:16.5px}
 /* ---- cards fill their grid cell; charts grow to match their neighbour ---- */
 .card{display:flex;flex-direction:column}
 .card>.card-head{flex:none}
