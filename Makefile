@@ -1,4 +1,4 @@
-.PHONY: test ingest etl features train price stream replay dashboard pipeline all
+.PHONY: site site-data test ingest etl features train price stream replay dashboard pipeline all
 
 PYTHON ?= python
 PYTHONPATH ?= src
@@ -37,3 +37,10 @@ test:
 
 pipeline: test
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m dpa.pipeline
+
+site-data:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m dpa.site_data
+
+site: site-data
+	@echo "Dashboard: http://localhost:8000/index.html"
+	$(PYTHON) -m http.server 8000 --directory site
