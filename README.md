@@ -311,6 +311,7 @@ make features    # panels + features → gold
 make train       # baselines + model + backtest → reports/model_card.md
 make price       # elasticities + recommendations → gold/pricing
 make dashboard   # streamlit run dashboard/app.py
+make site        # export gold tables to site/data and serve the multi-page website dashboard (site/)
 make all         # tests + gold rebuild + model evaluation + reports
 
 # real-time demo (two terminals)
