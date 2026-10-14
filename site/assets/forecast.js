@@ -7,11 +7,11 @@ App.view('forecast', { title: 'Forecast', sub: 'One-week-ahead unit demand per p
   const C = col();
   root.innerHTML = `
   ${banner(wins ? '<b>LightGBM beats the best baseline</b> on test WAPE.' : `<b>LightGBM does not beat the best baseline.</b> The ${L[base.model].toLowerCase()} has the lower test WAPE (${fmt.pct(base.wape)} against ${fmt.pct(lgb.wape)}), so it is the more accurate point forecast here. Before each 4-week block the models are refit on rows strictly before that block.`)}
-  <div class="grid g4 mt">
-    ${tile({ cls: 'green mini', label: 'LightGBM WAPE', value: fmt.pct(lgb.wape), text: 'all test product-weeks', art: art.waves(5) })}
-    ${tile({ cls: 'amber mini', label: 'Best baseline', value: fmt.pct(base.wape), text: L[base.model], art: art.bars() })}
-    ${tile({ cls: 'coral mini', label: 'Interval coverage', value: fmt.pct(lgb.coverage_80), text: 'target 80%', art: art.arcs() })}
-    ${tile({ cls: 'slate mini', label: 'November WAPE', value: fmt.pct(D.peak.lightgbm), text: `${D.peak.weeks} peak weeks · baseline ${fmt.pct(D.peak.moving_average_4)}`, art: art.rings() })}</div>
+  <div class="card kline mt">
+    ${App.stat({ cls: 'green mini', label: 'LightGBM WAPE', value: fmt.pct(lgb.wape), text: 'all test product-weeks', art: art.waves(5) })}
+    ${App.stat({ cls: 'amber mini', label: 'Best baseline', value: fmt.pct(base.wape), text: L[base.model], art: art.bars() })}
+    ${App.stat({ cls: 'coral mini', label: 'Interval coverage', value: fmt.pct(lgb.coverage_80), text: 'target 80%', art: art.arcs() })}
+    ${App.stat({ cls: 'slate mini', label: 'November WAPE', value: fmt.pct(D.peak.lightgbm), text: `${D.peak.weeks} peak weeks · baseline ${fmt.pct(D.peak.moving_average_4)}`, art: art.rings() })}</div>
   <div class="grid g-wide mt">
     ${card('Total demand: actual vs forecast', 'Sum over all products, with 26 weeks of context', '<div class="chart xl"><canvas id="c-agg"></canvas></div>', { tools: '<div class="seg" id="mseg"><button data-m="lightgbm" class="on">LightGBM</button><button data-m="moving_average_4">4-wk avg</button><button data-m="seasonal_naive">Seasonal</button></div>' })}
     ${card('Model comparison', 'Test WAPE', '<div class="chart sm"><canvas id="c-wape"></canvas></div><table style="margin-top:6px"><thead><tr><th>Model</th><th class="num">MAE</th><th class="num">Bias</th></tr></thead><tbody>' + F.metrics.map((m) => `<tr style="cursor:default"><td>${L[m.model]}</td><td class="num">${fmt.num(m.mae, 1)}</td><td class="num">${fmt.num(m.bias, 1)}</td></tr>`).join('') + '</tbody></table>')}</div>

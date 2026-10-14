@@ -6,11 +6,11 @@ App.view('demand', { title: 'Demand', sub: 'Seasonality, trend and concentration
   const C = col(), inner = O.weekly.units.slice(1, -1), pk = inner.indexOf(Math.max(...inner)) + 1, pm = O.monthly.units.indexOf(Math.max(...O.monthly.units));
   const q4 = (O.seasonality[9] + O.seasonality[10] + O.seasonality[11]) / O.seasonality.reduce((a, b) => a + b, 0);
   root.innerHTML = `
-  <div class="grid g4">
-    ${tile({ cls: 'green mini', label: 'Average week', value: fmt.compact(K.avg_weekly_units), text: 'units, partial weeks excluded', art: art.waves(5) })}
-    ${tile({ cls: 'amber mini', label: 'Peak week', value: fmt.compact(O.weekly.units[pk]), text: `week of ${fmt.date(O.weeks[pk])}`, art: art.bars() })}
-    ${tile({ cls: 'coral mini', label: 'Peak month', value: fmt.compact(O.monthly.units[pm]), text: monthLabel(O.monthly.labels[pm]), art: art.arcs() })}
-    ${tile({ cls: 'slate mini', label: 'Q4 share', value: fmt.pct(q4, 0), text: 'of all units sold in Oct–Dec', art: art.rings() })}</div>
+  <div class="card kline">
+    ${App.stat({ cls: 'green mini', label: 'Average week', value: fmt.compact(K.avg_weekly_units), text: 'units, partial weeks excluded', art: art.waves(5) })}
+    ${App.stat({ cls: 'amber mini', label: 'Peak week', value: fmt.compact(O.weekly.units[pk]), text: `week of ${fmt.date(O.weeks[pk])}`, art: art.bars() })}
+    ${App.stat({ cls: 'coral mini', label: 'Peak month', value: fmt.compact(O.monthly.units[pm]), text: monthLabel(O.monthly.labels[pm]), art: art.arcs() })}
+    ${App.stat({ cls: 'slate mini', label: 'Q4 share', value: fmt.pct(q4, 0), text: 'of all units sold in Oct–Dec', art: art.rings() })}</div>
   <div class="grid mt">
     ${card('Weekly demand', 'Units and revenue proxy (units × small-order list price)', '<div class="chart lg"><canvas id="c-weekly"></canvas></div><div class="src">Partial first and last weeks drop toward zero.</div>', { tools: '<div class="seg" id="seg"><button data-k="weekly" class="on">Weekly</button><button data-k="monthly">Monthly</button></div>' })}</div>
   <div class="grid g2 mt">

@@ -9,11 +9,11 @@ App.view('data', { title: 'Data & limits', sub: 'Reconciliation against the clea
   const days = (a, b) => (new Date(b) - new Date(a)) / 864e5, t0 = O.range[0], t1 = O.range[1], span = days(t0, t1), pos = (d) => (days(t0, d) / span) * 100;
   const seg = [['Train', D.periods.train_start, D.periods.train_end, C.green], ['Validation', D.periods.validation_start, D.periods.validation_end, C.amber], ['Test', D.periods.test_start, D.periods.test_end, C.orange]];
   root.innerHTML = `
-  <div class="grid g4">
-    ${tile({ cls: 'green mini', label: 'Clean rows', value: fmt.compact(num(R['Clean transaction rows'])), text: 'silver transactions', art: art.waves(5) })}
-    ${tile({ cls: 'amber mini', label: 'Product-weeks', value: fmt.compact(P.rows), text: `${fmt.int(P.products)} products`, art: art.bars() })}
-    ${tile({ cls: 'coral mini', label: 'Zero-filled', value: fmt.pct(P.zero_filled / P.rows, 0), text: 'of product-weeks had no sales', art: art.arcs() })}
-    ${tile({ cls: 'slate mini', label: 'Possibly unavailable', value: fmt.pct(P.possibly_unavailable / P.rows, 0), text: 'proxy, not inventory', art: art.rings() })}</div>
+  <div class="card kline">
+    ${App.stat({ cls: 'green mini', label: 'Clean rows', value: fmt.compact(num(R['Clean transaction rows'])), text: 'silver transactions', art: art.waves(5) })}
+    ${App.stat({ cls: 'amber mini', label: 'Product-weeks', value: fmt.compact(P.rows), text: `${fmt.int(P.products)} products`, art: art.bars() })}
+    ${App.stat({ cls: 'coral mini', label: 'Zero-filled', value: fmt.pct(P.zero_filled / P.rows, 0), text: 'of product-weeks had no sales', art: art.arcs() })}
+    ${App.stat({ cls: 'slate mini', label: 'Possibly unavailable', value: fmt.pct(P.possibly_unavailable / P.rows, 0), text: 'proxy, not inventory', art: art.rings() })}</div>
   <div class="grid g2 mt">
     ${card('Row reconciliation', 'Recomputed from the silver table against configs/pipeline.yaml', '<table><thead><tr><th>Measurement</th><th class="num">Recomputed</th><th class="num">Contract</th><th></th></tr></thead><tbody>' + checks.map(([k, e]) => { const v = num(R[k]); return `<tr style="cursor:default"><td>${k}</td><td class="num">${R[k] ?? '–'}</td><td class="num">${e.toLocaleString('en-GB')}</td><td class="${ok(v, e) ? 'ok' : 'no'}">${ok(v, e) ? '✓' : '≠'}</td></tr>`; }).join('') + '</tbody></table><div class="src">Revenue differs by pennies of rounding. Rejected raw rows are not kept in silver, so exclusion reasons cannot be re-derived.</div>')}
     ${card('Missing factors', 'Never filled with invented values', '<table><tbody>' + missing.map(([k, d, y]) => `<tr style="cursor:default"><td style="width:32%">${k}</td><td style="color:var(--muted)">${d}</td><td class="${y ? 'ok' : 'no'}">${y ? '✓' : '✕'}</td></tr>`).join('') + '</tbody></table>')}</div>

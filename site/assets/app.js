@@ -99,6 +99,7 @@
     },
   };
   const tile = ({ cls = 'green', label, badge = '', value, text, art: a, small, extra = '' }) => `<div class="tile ${cls} ${extra}"><div class="k"><span>${label}</span><span>${badge}</span></div><div class="n ${small ? 's' : ''}">${value}</div><div class="d">${text}</div>${a || ''}</div>`;
+  const stat = ({ label, value, text }) => `<div class="ks"><small>${label}</small><b>${value}</b><span>${text || ''}</span></div>`;
   const spark = (values, color, id) => {
     const v = values.filter((x) => x != null), mn = Math.min(...v), mx = Math.max(...v), w = 300, h = 64, p = 4;
     const pts = values.map((y, i) => (y == null ? null : [(i / (values.length - 1)) * w, h - p - ((y - mn) / (mx - mn || 1)) * (h - 2 * p)])).filter(Boolean);
@@ -198,5 +199,5 @@
     document.addEventListener('click', (e) => { if (!e.target.closest('.gsearch')) box.style.display = 'none'; });
     run();
   }
-  window.App = { view, arg, icon, fmt, col, withAlpha, axes, legend, chart, gradient, art, tile, spark, card, statLine, banner, heatmap, table, download, page, monthLabel, weekLabel, cap, esc, nice };
+  window.App = { stat, view, arg, icon, fmt, col, withAlpha, axes, legend, chart, gradient, art, tile, spark, card, statLine, banner, heatmap, table, download, page, monthLabel, weekLabel, cap, esc, nice };
 })();

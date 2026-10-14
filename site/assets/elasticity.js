@@ -5,11 +5,11 @@ const rows = P.rows.map((r) => Object.fromEntries(P.columns.map((c, i) => [c, r[
 App.view('elasticity', { title: 'Elasticity', sub: 'How much weekly demand moves when the small-order list price moves. Estimated with product and week fixed effects, then shrunk toward the pooled estimate.', tags: [`Pooled slope ${fmt.num(SM.pooled_elasticity, 2)}`, 'Identified = ≥3 distinct prices, enough weeks, 90% interval below zero', 'Observational data, not an experiment'] }, (root) => {
   const C = col(), eligible = rows.filter((r) => r.raw_elasticity != null), ident = rows.filter((r) => r.identified);
   root.innerHTML = `
-  <div class="grid g4">
-    ${tile({ cls: 'green mini', label: 'Pooled elasticity', value: fmt.num(SM.pooled_elasticity, 2), text: 'fixed-effects log-log slope', art: art.waves(5) })}
-    ${tile({ cls: 'amber mini', label: 'Enough price variation', value: fmt.int(eligible.length), text: `of ${fmt.int(SM.products)} products`, art: art.bars() })}
-    ${tile({ cls: 'coral mini', label: 'Identified', value: fmt.int(ident.length), text: 'interval entirely below zero', art: art.arcs() })}
-    ${tile({ cls: 'slate mini', label: 'Median identified', value: fmt.num(ident.map((r) => r.elasticity).sort((a, b) => a - b)[Math.floor(ident.length / 2)], 2), text: 'shrunk estimate', art: art.rings() })}</div>
+  <div class="card kline">
+    ${App.stat({ cls: 'green mini', label: 'Pooled elasticity', value: fmt.num(SM.pooled_elasticity, 2), text: 'fixed-effects log-log slope', art: art.waves(5) })}
+    ${App.stat({ cls: 'amber mini', label: 'Enough price variation', value: fmt.int(eligible.length), text: `of ${fmt.int(SM.products)} products`, art: art.bars() })}
+    ${App.stat({ cls: 'coral mini', label: 'Identified', value: fmt.int(ident.length), text: 'interval entirely below zero', art: art.arcs() })}
+    ${App.stat({ cls: 'slate mini', label: 'Median identified', value: fmt.num(ident.map((r) => r.elasticity).sort((a, b) => a - b)[Math.floor(ident.length / 2)], 2), text: 'shrunk estimate', art: art.rings() })}</div>
   <div class="grid g-wide mt">
     ${card('Distribution of identified elasticities', 'Each bar counts products. Below −1 means revenue rises when the price falls.', '<div class="chart"><canvas id="c-hist"></canvas></div>')}
     ${card('Identification funnel', 'Why most products are held', '<div class="bars" id="funnel"></div><div class="note" style="margin-top:16px">Most products never change list price enough to measure a response, so they receive the pooled value for reference only and are never repriced from it.</div>' + App.statLine('Median distinct prices (eligible)', String([...eligible.map((r) => r.n_distinct_prices)].sort((a, b) => a - b)[Math.floor(eligible.length / 2)])) + App.statLine('Median interval width (eligible)', fmt.num([...eligible.filter((r) => r.ci_upper != null).map((r) => r.ci_upper - r.ci_lower)].sort((a, b) => a - b)[Math.floor(eligible.length / 2)], 2)) + App.statLine('Not identified despite enough data', fmt.int(eligible.length - ident.length)))}</div>

@@ -6,11 +6,11 @@ App.view('impact', { title: 'Impact', sub: 'What the recommended changes are est
   const C = col(), gain = chg.reduce((a, r) => a + r.revenue_gain, 0), lo = chg.reduce((a, r) => a + r.revenue_gain_low, 0), hi = chg.reduce((a, r) => a + r.revenue_gain_high, 0);
   root.innerHTML = `
   ${banner('<b>These are estimates, not measured results.</b> No live price test was possible. The range uses the 90% interval of each product’s elasticity; the true effect can fall outside it if demand responds differently from history.')}
-  <div class="grid g4 mt">
-    ${tile({ cls: 'green mini', label: 'Estimated weekly gain', value: fmt.gbp(gain, 0), text: `range ${fmt.gbp(lo, 0)} to ${fmt.gbp(hi, 0)}`, art: art.waves(5), small: true })}
-    ${tile({ cls: 'amber mini', label: 'Products changed', value: fmt.int(chg.length), text: `${fmt.pct(chg.length / SM.products, 1)} of the catalogue`, art: art.bars() })}
-    ${tile({ cls: 'coral mini', label: 'Median change', value: fmt.spct(SM.median_change), text: 'mostly price cuts', art: art.arcs() })}
-    ${tile({ cls: 'slate mini', label: 'Largest single gain', value: fmt.gbp(Math.max(...chg.map((r) => r.revenue_gain)), 0), text: 'per week, one product', art: art.rings(), small: true })}</div>
+  <div class="card kline mt">
+    ${App.stat({ cls: 'green mini', label: 'Estimated weekly gain', value: fmt.gbp(gain, 0), text: `range ${fmt.gbp(lo, 0)} to ${fmt.gbp(hi, 0)}`, art: art.waves(5), small: true })}
+    ${App.stat({ cls: 'amber mini', label: 'Products changed', value: fmt.int(chg.length), text: `${fmt.pct(chg.length / SM.products, 1)} of the catalogue`, art: art.bars() })}
+    ${App.stat({ cls: 'coral mini', label: 'Median change', value: fmt.spct(SM.median_change), text: 'mostly price cuts', art: art.arcs() })}
+    ${App.stat({ cls: 'slate mini', label: 'Largest single gain', value: fmt.gbp(Math.max(...chg.map((r) => r.revenue_gain)), 0), text: 'per week, one product', art: art.rings(), small: true })}</div>
   <div class="grid g2 mt">
     ${card('Size of recommended changes', 'Products by percentage change', '<div class="chart"><canvas id="c-hist"></canvas></div>')}
     ${card('Cumulative gain', 'Products ranked by estimated gain', '<div class="chart"><canvas id="c-cum"></canvas></div>')}</div>

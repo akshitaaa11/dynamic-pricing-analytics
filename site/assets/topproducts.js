@@ -1,6 +1,6 @@
 (() => {
 const { fmt, tile, art, card, chart, axes, col, withAlpha, nice, esc } = App;
-const PR = DPA.products, P = DPA.pricing, pc = Object.fromEntries(P.columns.map((c, i) => [c, i]));
+const PR = DPA.products, O = DPA.overview, P = DPA.pricing, pc = Object.fromEntries(P.columns.map((c, i) => [c, i]));
 const rec = Object.fromEntries(P.rows.map((r) => [r[0], r]));
 const totalUnits = PR.rows.reduce((a, r) => a + r[2], 0), totalRev = PR.rows.reduce((a, r) => a + r[3], 0);
 const top = PR.rows.slice(0, 50).map((r, i) => ({ id: r[0], rank: i + 1, name: nice(r[1]), units: r[2], revenue: r[3], price: r[4], weeks: r[5], share: r[2] / totalUnits, rec: rec[r[0]] }));
@@ -8,11 +8,11 @@ App.view('topproducts', { title: 'Top products', sub: 'The 50 products with the 
   let shown = 10;
   const C = col(), u50 = top.reduce((a, r) => a + r.units, 0), r50 = top.reduce((a, r) => a + r.revenue, 0), chg = top.filter((r) => r.rec && !r.rec[pc.hold]).length;
   root.innerHTML = `
-  <div class="grid g4">
-    ${tile({ cls: 'green mini', label: 'Share of units', value: fmt.pct(u50 / totalUnits, 0), text: `held by the top 50 of ${fmt.int(PR.rows.length)} products`, art: art.waves(5) })}
-    ${tile({ cls: 'amber mini', label: 'Share of revenue', value: fmt.pct(r50 / totalRev, 0), text: 'revenue proxy, top 50', art: art.bars() })}
-    ${tile({ cls: 'coral mini', label: 'Best seller', value: fmt.compact(top[0].units), text: esc(top[0].name.slice(0, 34)), art: art.arcs() })}
-    ${tile({ cls: 'slate mini', label: 'With a price change', value: String(chg), text: 'of the top 50 are recommended a new price', art: art.rings() })}</div>
+  <div class="card kline">
+    ${App.stat({ cls: 'green mini', label: 'Share of units', value: fmt.pct(u50 / totalUnits, 0), text: `held by the top 50 of ${fmt.int(PR.rows.length)} products`, art: art.waves(5) })}
+    ${App.stat({ cls: 'amber mini', label: 'Share of revenue', value: fmt.pct(r50 / totalRev, 0), text: 'revenue proxy, top 50', art: art.bars() })}
+    ${App.stat({ cls: 'coral mini', label: 'Best seller', value: fmt.compact(top[0].units), text: esc(top[0].name.slice(0, 34)), art: art.arcs() })}
+    ${App.stat({ cls: 'slate mini', label: 'With a price change', value: String(chg), text: 'of the top 50 are recommended a new price', art: art.rings() })}</div>
   <div class="grid mt">${card('Top 20 by units', 'Units sold, best seller first', '<div class="chart lg"><canvas id="c-top"></canvas></div>')}</div>
   <h2 style="font-size:26px;font-weight:300;margin:44px 0 6px">Product leaderboard</h2>
   <p style="margin:0 0 22px;color:var(--muted)">Ranked by units sold. Each card shows the product's volume, revenue proxy, average price and current price decision. Click a card to open the product.</p>
@@ -24,10 +24,11 @@ App.view('topproducts', { title: 'Top products', sub: 'The 50 products with the 
       const rc = r.rec, hold = !rc || rc[pc.hold], ch = hold ? 0 : rc[pc.percent_change], ac = hold ? palette[(r.rank - 1) % palette.length] : ch > 0 ? C.green : C.orange;
       const dec = !rc ? '<span class="tag hold">No decision</span>' : hold ? '<span class="tag hold">Hold</span>' : `<span class="tag ${ch > 0 ? 'up' : 'down'}">Price ${fmt.spct(ch)}</span>`;
       return `<a class="pcard" href="demand.html#p-${encodeURIComponent(r.id)}" style="--ac:${ac}">
-        <div class="top"><span class="rank">${r.rank}</span><div><h4>${esc(r.name.slice(0, 48))}</h4><div class="code">Code ${esc(r.id)}</div></div></div>
-        <div class="bar"><div class="l"><span>Units sold</span><b>${fmt.int(r.units)}</b></div><div class="track"><div class="fill" style="width:${r.units / maxU * 100}%;background:linear-gradient(90deg,${ac},${withAlpha(ac, 0.45)})"></div></div></div>
-        <div class="stats"><div><small>Share of units</small><b>${fmt.pct(r.share, 2)}</b></div><div><small>Revenue proxy</small><b>${fmt.gbp(r.revenue, 0)}</b></div><div><small>Avg list price</small><b>${fmt.gbp(r.price)}</b></div><div><small>Weeks sold</small><b>${r.weeks}</b></div></div>
-        <div class="foot"><span>Price decision</span>${dec}</div></a>`;
+        <div class="ph"><span class="pr">#${r.rank}</span>${dec}</div>
+        <h4>${esc(r.name.slice(0, 48))}</h4><div class="pc">${esc(r.id)}</div>
+        <div class="pu"><b>${fmt.int(r.units)}</b><span>units sold · ${fmt.pct(r.share, 2)} of all units</span></div>
+        <div class="track"><div class="fill" style="width:${r.units / maxU * 100}%;background:${ac}"></div></div>
+        <dl class="pd"><div><dt>Revenue proxy</dt><dd>${fmt.gbp(r.revenue, 0)}</dd></div><div><dt>Average list price</dt><dd>${fmt.gbp(r.price)}</dd></div><div><dt>Weeks sold</dt><dd>${r.weeks} of ${O.weeks.length}</dd></div></dl></a>`;
     }).join('');
     document.getElementById('more').innerHTML = `<span>Showing ${shown} of ${top.length} products</span>` + (shown < top.length ? `<button class="btn" id="more-btn">Show ${Math.min(10, top.length - shown)} more</button>` : '') + (shown > 10 ? '<button class="btn ghost" id="less-btn">Show fewer</button>' : '');
     const m = document.getElementById('more-btn'); if (m) m.onclick = () => { shown = Math.min(top.length, shown + 10); draw(); };

@@ -8,11 +8,11 @@ App.view('lab', { title: 'Forecast lab', sub: 'Pick one of the 400 highest-volum
   const start = keep || (codes.includes(want) ? want : codes[0]);
   root.innerHTML = `<div class="card"><div class="picker"><div><label for="psel">Product</label><select id="psel">${codes.map((c) => `<option value="${c}" ${c === start ? 'selected' : ''}>${esc(nice(names[c] || ''))} · ${c}</option>`).join('')}</select></div>
     <div><label for="msel">Compare against</label><select id="msel"><option value="moving_average_4">4-week moving average</option><option value="lightgbm">LightGBM only (no baseline)</option></select></div></div></div>
-  <div class="grid g4 mt" id="kp"></div>
+  <div class="card kline mt" id="kp"></div>
   <div class="grid mt">${card('Actual, forecast and interval', 'Last 26 weeks before the test period, then the 12 test weeks', '<div class="chart lg"><canvas id="c-prod"></canvas></div>')}</div>
   <div class="grid mt">${card('Forecast error by week', 'Forecast minus actual, units. Bars above zero are over-forecasts.', '<div class="chart"><canvas id="c-err"></canvas></div><div id="stats" style="margin-top:14px"></div>')}</div>
   <div class="note mt">The shaded band is the 80% prediction interval from separate quantile models; roughly eight in ten actual values should land inside it. Weeks are forecast one step ahead from the lags known at that time, and the model is refit every four weeks using only earlier data.</div>`;
-  const kpi = (n, v, s) => `<div class="card"><div class="sub">${n}</div><div style="font-size:34px;font-weight:200;margin:6px 0 2px">${v}</div><div class="sub">${s}</div></div>`;
+  const kpi = (n, v, s) => App.stat({ label: n, value: v, text: s });
   function show(code) {
     window.__labSel = code; const rows = F.products[code], first = rows[0][0], s = S[code], from = Math.max(first - 26, s ? s[0] : first), to = rows.at(-1)[0];
     const idx = []; for (let i = from; i <= to; i++) idx.push(i);

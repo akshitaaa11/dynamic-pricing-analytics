@@ -313,3 +313,41 @@ th,td,.stat-line,.legend .row{border-color:var(--glass-edge)}
 @media(max-width:1280px){.pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.pgrid{grid-template-columns:1fr}}
 .pcard h4{min-height:2.6em}.pcard .foot{margin-top:auto}
+/* ---- slim stat strip on inner tabs ---- */
+.card.kline{flex-direction:row;flex-wrap:wrap;padding:20px 8px}
+.ks{flex:1 1 200px;padding:4px 26px;border-left:1px solid var(--glass-edge);min-width:0;display:flex;flex-direction:column}
+.ks:first-child{border-left:0}
+.ks small{color:var(--muted);font-size:15px}
+.ks b{font-size:34px;font-weight:300;letter-spacing:-.8px;line-height:1.25}
+.ks span{color:var(--muted);font-size:14.5px;line-height:1.4}
+@media(max-width:760px){.ks{flex-basis:45%;border-left:0;padding:10px 16px}}
+/* ---- toned-down glass ---- */
+:root{--glass:rgba(255,255,255,.8);--glass-strong:rgba(255,255,255,.92);--glass-line:rgba(255,255,255,.9);--glass-edge:rgba(40,50,45,.1);--glass-shadow:0 4px 18px rgba(38,50,44,.06),0 1px 2px rgba(38,50,44,.05);--blur:blur(8px) saturate(1.2)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--glass:rgba(28,32,30,.78);--glass-strong:rgba(34,39,36,.9);--glass-line:rgba(255,255,255,.07);--glass-shadow:0 6px 22px rgba(0,0,0,.3),0 1px 2px rgba(0,0,0,.3)}}
+:root[data-theme="dark"]{--glass:rgba(28,32,30,.78);--glass-strong:rgba(34,39,36,.9);--glass-line:rgba(255,255,255,.07);--glass-shadow:0 6px 22px rgba(0,0,0,.3),0 1px 2px rgba(0,0,0,.3)}
+body{background-image:
+  radial-gradient(38% 34% at 8% 6%,color-mix(in srgb,var(--green) 13%,transparent),transparent 70%),
+  radial-gradient(34% 30% at 92% 12%,color-mix(in srgb,var(--amber) 12%,transparent),transparent 70%),
+  radial-gradient(40% 38% at 86% 88%,color-mix(in srgb,var(--slate) 12%,transparent),transparent 70%),
+  radial-gradient(32% 30% at 12% 86%,color-mix(in srgb,var(--violet) 9%,transparent),transparent 70%),
+  radial-gradient(var(--dot) 1px,transparent 1px)}
+.card{border-radius:16px}
+.tile::after{background:linear-gradient(160deg,rgba(255,255,255,.1),rgba(255,255,255,0) 40%)}
+
+/* ---- cleaner product cards ---- */
+.pgrid{gap:20px}
+.pcard{display:block;padding:22px 24px 8px;border-radius:16px;gap:0;transition:border-color .15s,box-shadow .15s}
+.pcard::before,.pcard::after{display:none}
+.pcard:hover{transform:none;border-color:var(--ac);box-shadow:var(--glass-shadow)}
+.pcard .ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.pcard .pr{font-size:15px;color:var(--ac);font-weight:500;letter-spacing:.04em}
+.pcard h4{font-size:20px;font-weight:400;min-height:2.6em;margin:0;line-height:1.3}
+.pcard .pc{color:var(--muted);font-size:14.5px;margin:2px 0 18px}
+.pcard .pu{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.pcard .pu b{font-size:32px;font-weight:300;letter-spacing:-.8px;line-height:1}
+.pcard .pu span{color:var(--muted);font-size:14.5px}
+.pcard .track{height:5px;margin-bottom:16px}
+.pcard .pd{margin:0}
+.pcard .pd div{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid var(--glass-edge)}
+.pcard .pd dt{color:var(--muted);font-size:15px}
+.pcard .pd dd{margin:0;font-size:17px;text-align:right}

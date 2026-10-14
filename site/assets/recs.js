@@ -7,11 +7,11 @@ App.view('recs', { title: 'Recommendations', sub: 'Every product gets a decision
   const C = col(), ups = rows.filter((r) => !r.hold && r.percent_change > 0).length, downs = rows.filter((r) => !r.hold && r.percent_change < 0).length;
   root.innerHTML = `
   ${banner('<b>Revenue effects are model estimates, not measured results.</b> They come from forecast × elasticity and are only recommended when the gain holds across the whole 90% elasticity interval. Revenue is not profit: costs are not in the data.')}
-  <div class="grid g4 mt">
-    ${tile({ cls: 'green mini', label: 'Price changes', value: fmt.int(SM.recommended), text: `${ups} up · ${downs} down`, art: art.waves(5) })}
-    ${tile({ cls: 'amber mini', label: 'Held', value: fmt.int(SM.held), text: 'each with a stated reason', art: art.bars() })}
-    ${tile({ cls: 'coral mini', label: 'Median change', value: fmt.spct(SM.median_change), text: 'among recommended changes', art: art.arcs() })}
-    ${tile({ cls: 'slate mini', label: 'Held-out check', value: fmt.pct(P.check.sign_agreement, 0), text: `direction right on ${fmt.int(P.check.n_price_changes)} real changes`, art: art.rings() })}</div>
+  <div class="card kline mt">
+    ${App.stat({ cls: 'green mini', label: 'Price changes', value: fmt.int(SM.recommended), text: `${ups} up · ${downs} down`, art: art.waves(5) })}
+    ${App.stat({ cls: 'amber mini', label: 'Held', value: fmt.int(SM.held), text: 'each with a stated reason', art: art.bars() })}
+    ${App.stat({ cls: 'coral mini', label: 'Median change', value: fmt.spct(SM.median_change), text: 'among recommended changes', art: art.arcs() })}
+    ${App.stat({ cls: 'slate mini', label: 'Held-out check', value: fmt.pct(P.check.sign_agreement, 0), text: `direction right on ${fmt.int(P.check.n_price_changes)} real changes`, art: art.rings() })}</div>
   <div class="grid g-wide mt">
     <div class="card"><div class="card-head"><h3>All products</h3></div><div class="toolbar"><input type="text" id="q" placeholder="Filter by code or name"><select id="fd"><option value="all">All decisions</option><option value="chg">Price changes</option><option value="hold">Holds</option></select><select id="fc"><option value="all">Any confidence</option><option>High</option><option>Medium</option><option>Low</option></select><button class="seg" style="border:1px solid var(--border);padding:0 14px;height:40px;cursor:pointer;color:var(--ink);font:inherit;font-weight:300" id="export">Export CSV</button></div><div id="tbl"></div></div>
     <div id="detail" style="align-self:start;position:sticky;top:16px"></div></div>`;
