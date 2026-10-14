@@ -1,0 +1,1 @@
+App.page({ id: 'forecast', title: 'Demand & forecast', sub: '', tabs: [['demand', 'Demand', 'demand'], ['customers', 'Customers & orders', 'customers'], ['products', 'Products', 'p'], ['forecast', 'Forecast', 'forecast'], ['lab', 'Forecast lab', 'lab']] });

@@ -1,6 +1,7 @@
+(() => {
 const { fmt, tile, art, card, chart, axes, legend, col, withAlpha, heatmap, monthLabel } = App;
 const Cu = DPA.customers, K = Cu.kpis;
-App.page({ id: 'customers', title: 'Customers & orders', sub: 'Who buys, when they order and how big the baskets are. Sale invoices only; cancellations are excluded.', tags: [`${fmt.int(K.orders)} orders`, `${fmt.int(K.customers)} identified customers`, `${fmt.pct(K.no_customer_id_share, 0)} of orders have no customer ID`] }, (root) => {
+App.view('customers', { title: 'Customers & orders', sub: 'Who buys, when they order and how big the baskets are. Sale invoices only; cancellations are excluded.', tags: [`${fmt.int(K.orders)} orders`, `${fmt.int(K.customers)} identified customers`, `${fmt.pct(K.no_customer_id_share, 0)} of orders have no customer ID`] }, (root) => {
   const C = col(), palette = [C.green, C.orange, C.amber, C.slate, C.violet, C.red, C.lime, C.faint, C.border];
   root.innerHTML = `
   <div class="grid g4">
@@ -27,3 +28,4 @@ App.page({ id: 'customers', title: 'Customers & orders', sub: 'Who buys, when th
   chart('c-value', { type: 'bar', data: { labels, datasets: [{ data: Cu.order_value_hist.counts, backgroundColor: withAlpha(C.green, 0.8), borderRadius: 4, maxBarThickness: 34 }] }, options: { maintainAspectRatio: false, scales: { x: { ...axes().x, ticks: { maxRotation: 0, autoSkip: false, font: { size: 10.5 } } }, y: axes().y }, plugins: { tooltip: { callbacks: { label: (c) => ` ${fmt.int(c.parsed.y)} orders` } } } } });
   chart('c-repeat', { type: 'bar', data: { labels: Cu.orders_per_customer.map((r) => (r[0] === 10 ? '10+' : r[0])), datasets: [{ data: Cu.orders_per_customer.map((r) => r[1]), backgroundColor: withAlpha(C.slate, 0.85), borderRadius: 4, maxBarThickness: 30 }] }, options: { maintainAspectRatio: false, scales: axes(), plugins: { tooltip: { callbacks: { label: (c) => ` ${fmt.int(c.parsed.y)} customers` } } } } });
 });
+})();

@@ -1,7 +1,8 @@
+(() => {
 const { fmt, tile, art, card, chart, axes, legend, col, withAlpha, gradient, monthLabel, weekLabel, heatmap, nice } = App;
 const O = DPA.overview, K = O.kpis, names = Object.fromEntries(DPA.search.rows.map((r) => [r[0], r[1]]));
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-App.page({ id: 'demand', title: 'Demand', sub: 'Seasonality, trend and concentration of weekly unit demand.', tags: [`${fmt.date(O.range[0])} to ${fmt.date(O.range[1])}`, `${fmt.int(K.products)} products`, 'Source: gold product-week features'] }, (root) => {
+App.view('demand', { title: 'Demand', sub: 'Seasonality, trend and concentration of weekly unit demand.', tags: [`${fmt.date(O.range[0])} to ${fmt.date(O.range[1])}`, `${fmt.int(K.products)} products`, 'Source: gold product-week features'] }, (root) => {
   const C = col(), inner = O.weekly.units.slice(1, -1), pk = inner.indexOf(Math.max(...inner)) + 1, pm = O.monthly.units.indexOf(Math.max(...O.monthly.units));
   const q4 = (O.seasonality[9] + O.seasonality[10] + O.seasonality[11]) / O.seasonality.reduce((a, b) => a + b, 0);
   root.innerHTML = `
@@ -41,3 +42,4 @@ App.page({ id: 'demand', title: 'Demand', sub: 'Seasonality, trend and concentra
     options: { maintainAspectRatio: false, scales: { x: axes().x, y: { ...axes().y, ticks: { callback: (v) => v + '%' } } }, plugins: { legend: legend() } } });
   document.getElementById('tb').innerHTML = O.top_products.map((r) => `<tr onclick="location.href='products.html#${encodeURIComponent(r[0])}'" style="cursor:pointer"><td>${r[0]}</td><td>${App.esc(nice(names[r[0]]))}</td><td class="num">${fmt.int(r[1])}</td><td class="num">${fmt.gbp(r[2], 0)}</td><td class="num">${fmt.gbp(r[3])}</td></tr>`).join('');
 });
+})();

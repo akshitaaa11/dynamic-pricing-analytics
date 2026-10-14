@@ -20,12 +20,7 @@
     download: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
   };
   const icon = (n) => `<svg viewBox="0 0 24 24">${ICON[n] || ''}</svg>`;
-  const NAV = [
-    ['Overview', [['home', 'index.html', 'Home'], ['demand', 'demand.html', 'Demand'], ['customers', 'customers.html', 'Customers & orders'], ['products', 'products.html', 'Products']]],
-    ['Forecasting', [['forecast', 'forecast.html', 'Forecast'], ['lab', 'lab.html', 'Forecast lab']]],
-    ['Pricing', [['elasticity', 'elasticity.html', 'Elasticity'], ['pricing', 'pricing.html', 'Recommendations'], ['impact', 'impact.html', 'Impact']]],
-    ['Reference', [['data', 'data.html', 'Data & limits'], ['about', 'about.html', 'Method']]],
-  ];
+  const NAV = [['', [['home', 'index.html', 'Overview'], ['forecast', 'explore.html', 'Demand & forecast'], ['pricing', 'pricing.html', 'Pricing']]]];
   const fmt = {
     int: (v) => (v == null || !isFinite(v) ? '–' : Math.round(v).toLocaleString('en-GB')),
     gbp: (v, d = 2) => (v == null || !isFinite(v) ? '–' : (v < 0 ? '−' : '') + '£' + Math.abs(v).toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d })),
@@ -149,22 +144,35 @@
     try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rows.map((r) => r.map(q).join(',')).join('\n')], { type: 'text/csv' })); a.download = name; a.click(); } catch (e) {}
   }
 
-  /* ---------- page shell ---------- */
-  function page(cfg, build) {
-    if (!document.body) { document.addEventListener('DOMContentLoaded', () => page(cfg, build)); return; }
-    const { id, title, sub, tags = [] } = cfg;
+  /* ---------- views and tabbed pages ---------- */
+  const views = {};
+  const view = (name, cfg, build) => { views[name] = { cfg, build }; };
+  const arg = (prefix) => { const h = location.hash.slice(1); return h.startsWith(prefix + '-') ? decodeURIComponent(h.slice(prefix.length + 1)) : ''; };
+
+  function page({ id, title, sub, tabs }) {
+    if (!document.body) { document.addEventListener('DOMContentLoaded', () => page({ id, title, sub, tabs })); return; }
     const mode = store.get('dpa-theme'); if (mode === 'light' || mode === 'dark') document.documentElement.setAttribute('data-theme', mode);
-    const nav = NAV.map(([label, items]) => `<div class="nav-label">${label}</div>` + items.map(([k, href, text]) => `<a href="${href}" class="${k === id ? 'on' : ''}"><span class="ico">${icon(k)}</span>${text}</a>`).join('')).join('');
+    const nav = NAV.map(([label, items]) => (label ? `<div class="nav-label">${label}</div>` : '') + items.map(([k, href, text]) => `<a href="${href}" class="${k === id ? 'on' : ''}"><span class="ico">${icon(k)}</span>${text}</a>`).join('')).join('');
     document.body.innerHTML = `<div class="app"><aside class="side">
       <a class="brand" href="index.html"><span class="brand-mark"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="3"/>${Array.from({ length: 12 }, (_, i) => { const a = (i / 12) * Math.PI * 2; return `<path d="M${(16 + Math.cos(a) * 7).toFixed(1)} ${(16 + Math.sin(a) * 7).toFixed(1)}L${(16 + Math.cos(a) * 12).toFixed(1)} ${(16 + Math.sin(a) * 12).toFixed(1)}"/>`; }).join('')}</svg></span><span><b>Dynamic Pricing</b><small>Analytics</small></span></a>
       <div class="gsearch">${icon('search')}<input type="text" id="gsearch" placeholder="Find a product" autocomplete="off"><div class="results" id="gresults"></div></div>
       <nav class="nav">${nav}</nav>
       <div class="side-foot"><span><span class="chip">Research project</span></span><span>Online Retail II, 2009–2011. Revenue effects are model estimates, not measured results.</span></div></aside>
-      <main class="main"><div class="head"><div><h1>${title}</h1><p>${sub}</p></div><div class="theme"><button id="t-light" title="Light">${icon('sun')}</button><button id="t-dark" title="Dark">${icon('moon')}</button></div></div>
-      <div class="tags">${tags.map((t) => `<span>${t}</span>`).join('')}</div><div id="content"></div></main></div>`;
+      <main class="main"><div class="head"><div><h1>${title}</h1><p id="vsub">${sub}</p></div><div class="theme"><button id="t-light" title="Light">${icon('sun')}</button><button id="t-dark" title="Dark">${icon('moon')}</button></div></div>
+      <div class="tabs" id="tabs">${tabs.map(([v, label]) => `<button data-v="${v}">${label}</button>`).join('')}</div>
+      <div class="tags" id="vtags"></div><div id="content"></div></main></div>`;
     const root = document.getElementById('content');
+    const h = location.hash.slice(1);
+    let active = (tabs.find(([v, , key]) => h === key || h.startsWith(key + '-')) || tabs[0])[0];
     const sync = () => { document.getElementById('t-light').classList.toggle('on', theme() === 'light'); document.getElementById('t-dark').classList.toggle('on', theme() === 'dark'); };
-    const run = () => { destroyCharts(); chartDefaults(); sync(); build(root); };
+    const run = () => {
+      const v = views[active]; destroyCharts(); chartDefaults(); sync();
+      document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.v === active));
+      document.getElementById('vsub').textContent = v.cfg.sub || sub;
+      document.getElementById('vtags').innerHTML = (v.cfg.tags || []).map((t) => `<span>${t}</span>`).join('');
+      v.build(root);
+    };
+    document.querySelectorAll('#tabs button').forEach((b) => (b.onclick = () => { active = b.dataset.v; const k = (tabs.find(([v]) => v === active) || [])[2]; history.replaceState(null, '', '#' + (k || '')); window.scrollTo(0, 0); run(); }));
     const setMode = (m) => { document.documentElement.setAttribute('data-theme', m); store.set('dpa-theme', m); run(); };
     document.getElementById('t-light').onclick = () => setMode('light');
     document.getElementById('t-dark').onclick = () => setMode('dark');
@@ -173,11 +181,12 @@
       const q = input.value.trim().toLowerCase(); const rows = (window.DPA && DPA.search && DPA.search.rows) || [];
       if (q.length < 2) { box.style.display = 'none'; return; }
       const hits = rows.filter((r) => String(r[0]).toLowerCase().includes(q) || String(r[1] || '').toLowerCase().includes(q)).slice(0, 8);
-      box.innerHTML = hits.map((r) => `<a href="products.html#${encodeURIComponent(r[0])}"><span>${esc(nice(r[1]))}</span><small>${esc(r[0])}</small></a>`).join('') || '<a><small>No match</small></a>';
+      box.innerHTML = hits.map((r) => `<a href="explore.html#p-${encodeURIComponent(r[0])}"><span>${esc(nice(r[1]))}</span><small>${esc(r[0])}</small></a>`).join('') || '<a><small>No match</small></a>';
       box.style.display = 'block';
     });
+    window.addEventListener('hashchange', () => { const hh = location.hash.slice(1); const t = tabs.find(([, , key]) => hh === key || hh.startsWith(key + '-')); if (t) { active = t[0]; run(); } });
     document.addEventListener('click', (e) => { if (!e.target.closest('.gsearch')) box.style.display = 'none'; });
     run();
   }
-  window.App = { icon, fmt, col, withAlpha, axes, legend, chart, gradient, art, tile, spark, card, statLine, banner, heatmap, table, download, page, monthLabel, weekLabel, cap, esc, nice };
+  window.App = { view, arg, icon, fmt, col, withAlpha, axes, legend, chart, gradient, art, tile, spark, card, statLine, banner, heatmap, table, download, page, monthLabel, weekLabel, cap, esc, nice };
 })();

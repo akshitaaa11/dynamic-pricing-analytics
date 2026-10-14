@@ -1,7 +1,8 @@
+(() => {
 const { fmt, tile, art, card, chart, axes, legend, col, withAlpha, esc, nice } = App;
 const P = DPA.pricing, SM = P.summary, ci = Object.fromEntries(P.columns.map((c, i) => [c, i])), names = Object.fromEntries(DPA.search.rows.map((r) => [r[0], r[1]]));
 const rows = P.rows.map((r) => Object.fromEntries(P.columns.map((c, i) => [c, r[i]])));
-App.page({ id: 'elasticity', title: 'Elasticity', sub: 'How much weekly demand moves when the small-order list price moves. Estimated with product and week fixed effects, then shrunk toward the pooled estimate.', tags: [`Pooled slope ${fmt.num(SM.pooled_elasticity, 2)}`, 'Identified = ≥3 distinct prices, enough weeks, 90% interval below zero', 'Observational data, not an experiment'] }, (root) => {
+App.view('elasticity', { title: 'Elasticity', sub: 'How much weekly demand moves when the small-order list price moves. Estimated with product and week fixed effects, then shrunk toward the pooled estimate.', tags: [`Pooled slope ${fmt.num(SM.pooled_elasticity, 2)}`, 'Identified = ≥3 distinct prices, enough weeks, 90% interval below zero', 'Observational data, not an experiment'] }, (root) => {
   const C = col(), eligible = rows.filter((r) => r.raw_elasticity != null), ident = rows.filter((r) => r.identified);
   root.innerHTML = `
   <div class="grid g4">
@@ -30,3 +31,4 @@ App.page({ id: 'elasticity', title: 'Elasticity', sub: 'How much weekly demand m
   const wb = Array.from({ length: 8 }, (_, i) => i * 0.4), wc = wb.map((b) => eligible.filter((r) => r.ci_upper != null && r.ci_upper - r.ci_lower >= b && r.ci_upper - r.ci_lower < b + 0.4).length);
   chart('c-w', { type: 'bar', data: { labels: wb.map((b) => `${b.toFixed(1)}–${(b + 0.4).toFixed(1)}`), datasets: [{ data: wc, backgroundColor: withAlpha(C.slate, 0.85), borderRadius: 3 }] }, options: { maintainAspectRatio: false, scales: axes(), plugins: { tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} products` } } } } });
 });
+})();

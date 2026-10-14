@@ -1,7 +1,8 @@
+(() => {
 const { fmt, tile, art, card, chart, axes, legend, col, withAlpha, monthLabel } = App;
 const D = DPA.data, Q = D.quality, R = D.recomputed, P = D.panel, O = DPA.overview;
 const num = (s) => (s == null ? null : parseFloat(String(s).replace(/[£,−]/g, (m) => (m === '−' ? '-' : ''))));
-App.page({ id: 'data', title: 'Data & limits', sub: 'Reconciliation against the cleaning contract, what the data does not contain, and how far to trust each number.', tags: ['UCI Online Retail II', 'Dec 2009 – Dec 2011', 'Silver table: cleaned transactions'] }, (root) => {
+App.view('data', { title: 'Data & limits', sub: 'Reconciliation against the cleaning contract, what the data does not contain, and how far to trust each number.', tags: ['UCI Online Retail II', 'Dec 2009 – Dec 2011', 'Silver table: cleaned transactions'] }, (root) => {
   const C = col(), checks = [['Clean transaction rows', Q.expected_clean_rows], ['Sale rows', Q.expected_sale_rows], ['Gross sale units', Q.expected_gross_units], ['Gross sale revenue', Q.expected_gross_revenue], ['Cancellation value', Q.expected_cancellation_value]];
   const ok = (a, b) => a != null && Math.abs(a - b) <= Math.max(0.05, Math.abs(b) * 1e-6);
   const missing = [['Competitor prices', 'Not in the data', 0], ['Promotion labels', 'Not available. Observed markdowns are not treated as promotions.', 0], ['Inventory', 'Not available. A sales-gap proxy flags possible unavailability.', 0], ['Unit costs and profit', 'Not available. Revenue is shown, never profit.', 0], ['UK holidays', 'Rule-based calendar from the holidays package.', 1], ['ONS market series', 'Optional; not used in this build.', 0]];
@@ -22,3 +23,4 @@ App.page({ id: 'data', title: 'Data & limits', sub: 'Reconciliation against the 
     ${card('Availability over time', 'Zero-sales and possibly-unavailable product-weeks', '<div class="chart"><canvas id="c-z"></canvas></div>')}</div>`;
   chart('c-z', { type: 'line', data: { labels: O.zero_by_month.labels.map(monthLabel), datasets: [{ label: 'Zero-sales weeks', data: O.zero_by_month.zero.map((v) => v * 100), borderColor: C.orange, tension: .3 }, { label: 'Possibly unavailable', data: O.zero_by_month.unavailable.map((v) => v * 100), borderColor: C.slate, tension: .3 }] }, options: { maintainAspectRatio: false, scales: { x: axes().x, y: { ...axes().y, ticks: { callback: (v) => v + '%' } } }, plugins: { legend: legend() } } });
 });
+})();

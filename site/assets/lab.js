@@ -1,9 +1,10 @@
+(() => {
 const { fmt, card, chart, axes, legend, col, withAlpha, weekLabel, nice, esc } = App;
 const F = DPA.forecast, O = DPA.overview, S = DPA.products.series, names = Object.fromEntries(DPA.search.rows.map((r) => [r[0], r[1]]));
 const L = { moving_average_4: '4-week average', lightgbm: 'LightGBM only' };
-App.page({ id: 'lab', title: 'Forecast lab', sub: 'Pick one of the 400 highest-volume products and compare its forecast with what happened.', tags: ['Actual vs LightGBM vs 4-week average', '80% prediction interval from quantile models', 'Test weeks only are forecasts'] }, (root) => {
+App.view('lab', { title: 'Forecast lab', sub: 'Pick one of the 400 highest-volume products and compare its forecast with what happened.', tags: ['Actual vs LightGBM vs 4-week average', '80% prediction interval from quantile models', 'Test weeks only are forecasts'] }, (root) => {
   const C = col(), codes = Object.keys(F.products);
-  const want = decodeURIComponent(location.hash.slice(1)), keep = (window.__labSel && codes.includes(window.__labSel)) ? window.__labSel : null;
+  const want = App.arg('lab'), keep = (window.__labSel && codes.includes(window.__labSel)) ? window.__labSel : null;
   const start = keep || (codes.includes(want) ? want : codes[0]);
   root.innerHTML = `<div class="card"><div class="picker"><div><label for="psel">Product</label><select id="psel">${codes.map((c) => `<option value="${c}" ${c === start ? 'selected' : ''}>${esc(nice(names[c] || ''))} · ${c}</option>`).join('')}</select></div>
     <div><label for="msel">Compare against</label><select id="msel"><option value="moving_average_4">4-week moving average</option><option value="lightgbm">LightGBM only (no baseline)</option></select></div></div></div>
@@ -27,3 +28,4 @@ App.page({ id: 'lab', title: 'Forecast lab', sub: 'Pick one of the 400 highest-v
   document.getElementById('psel').onchange = (e) => show(e.target.value); document.getElementById('msel').onchange = () => show(document.getElementById('psel').value);
   show(start);
 });
+})();

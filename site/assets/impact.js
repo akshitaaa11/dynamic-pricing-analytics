@@ -1,7 +1,8 @@
+(() => {
 const { fmt, tile, art, card, banner, chart, axes, legend, col, withAlpha, nice, esc } = App;
 const P = DPA.pricing, SM = P.summary, names = Object.fromEntries(DPA.search.rows.map((r) => [r[0], r[1]]));
 const rows = P.rows.map((r) => Object.fromEntries(P.columns.map((c, i) => [c, r[i]]))), chg = rows.filter((r) => !r.hold);
-App.page({ id: 'impact', title: 'Impact', sub: 'What the recommended changes are estimated to be worth, how confident the model is, and which guardrails bind.', tags: ['Estimates under the model', 'Weekly revenue at forecast demand', 'Not profit'] }, (root) => {
+App.view('impact', { title: 'Impact', sub: 'What the recommended changes are estimated to be worth, how confident the model is, and which guardrails bind.', tags: ['Estimates under the model', 'Weekly revenue at forecast demand', 'Not profit'] }, (root) => {
   const C = col(), gain = chg.reduce((a, r) => a + r.revenue_gain, 0), lo = chg.reduce((a, r) => a + r.revenue_gain_low, 0), hi = chg.reduce((a, r) => a + r.revenue_gain_high, 0);
   root.innerHTML = `
   ${banner('<b>These are estimates, not measured results.</b> No live price test was possible. The range uses the 90% interval of each product’s elasticity; the true effect can fall outside it if demand responds differently from history.')}
@@ -36,3 +37,4 @@ App.page({ id: 'impact', title: 'Impact', sub: 'What the recommended changes are
   const top = sorted.slice(0, 10);
   chart('c-top', { type: 'bar', data: { labels: top.map((r) => nice(names[r.Stock_Code] || r.Stock_Code).slice(0, 24)), datasets: [{ label: 'Range', data: top.map((r) => [r.revenue_gain_low, r.revenue_gain_high]), backgroundColor: withAlpha(C.green, 0.3), borderRadius: 3, barThickness: 14, grouped: false }, { label: 'Estimate', data: top.map((r) => r.revenue_gain), backgroundColor: C.green, borderRadius: 3, barThickness: 5, grouped: false }] }, options: { indexAxis: 'y', maintainAspectRatio: false, scales: { x: { ...axes().y, ticks: { callback: (v) => '£' + v } }, y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10.5 } } } }, plugins: { legend: legend(), tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${Array.isArray(c.raw) ? fmt.gbp(c.raw[0], 0) + ' to ' + fmt.gbp(c.raw[1], 0) : fmt.gbp(c.raw, 0)}` } } } } });
 });
+})();

@@ -1,6 +1,7 @@
+(() => {
 const { fmt, card, col } = App;
 const D = DPA.data, G = D.guardrails, F = DPA.forecast, P = DPA.pricing;
-App.page({ id: 'about', title: 'Method', sub: 'How raw transactions become forecasts and price decisions, and the rules that stop weak evidence from changing a price.', tags: ['PySpark + Parquet', 'LightGBM', 'statsmodels-style fixed effects', 'Reproducible with make all'] }, (root) => {
+App.view('about', { title: 'Method', sub: 'How raw transactions become forecasts and price decisions, and the rules that stop weak evidence from changing a price.', tags: ['PySpark + Parquet', 'LightGBM', 'statsmodels-style fixed effects', 'Reproducible with make all'] }, (root) => {
   const step = (k, t, d) => `<div class="step"><i>${k}</i><b>${t}</b><small>${d}</small></div>`;
   root.innerHTML = `
   ${card('Pipeline', 'Each stage reads the previous stage’s Parquet table', `<div class="flow">${step('Bronze', 'Raw transactions', 'Excel workbook converted to Parquet')}${step('Silver', 'Cleaned rows', 'Non-merchandise codes removed, cancellations kept as returns')}${step('Gold', 'Product-week panel', 'Zero-filled lifecycle, availability proxy, lag and rolling features')}${step('Model', 'LightGBM + baselines', 'Refit every 4 weeks on earlier data only')}${step('Pricing', 'Elasticity + search', 'Guardrails, retail price endings, explanation text')}${step('Site', 'This dashboard', 'Static pages reading exported gold tables')}</div>`)}
@@ -12,3 +13,4 @@ App.page({ id: 'about', title: 'Method', sub: 'How raw transactions become forec
     ${card('Design rules', '', '<div class="note" style="display:grid;gap:8px"><span>• Every number comes from the data, a documented source or a measured model.</span><span>• Missing factors are shown as missing.</span><span>• A hold always has a reason.</span></div>')}
     ${card('Documents', 'In the repository', '<div class="legend"><div class="row"><a href="../reports/data_card.md">Data card</a><span>lineage and limits</span></div><div class="row"><a href="../reports/model_card.md">Model card</a><span>metrics and caveats</span></div><div class="row"><a href="../reports/final_report.md">Final report</a><span>summary</span></div><div class="row"><a href="../README.md">README</a><span>specification</span></div></div>')}</div>`;
 });
+})();

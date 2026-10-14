@@ -1,8 +1,9 @@
+(() => {
 const { fmt, tile, art, card, banner, chart, axes, legend, col, withAlpha, weekLabel } = App;
 const F = DPA.forecast, O = DPA.overview, D = F.diagnostics;
 const M = Object.fromEntries(F.metrics.map((m) => [m.model, m])), L = { lightgbm: 'LightGBM', seasonal_naive: 'Seasonal naive', moving_average_4: '4-week average', moving_average_13: '13-week average' };
 const lgb = M.lightgbm, base = F.metrics.filter((m) => m.model !== 'lightgbm').sort((a, b) => a.wape - b.wape)[0], wins = lgb.wape < base.wape;
-App.page({ id: 'forecast', title: 'Forecast', sub: 'One-week-ahead unit demand per product, evaluated by rolling origin against simple baselines.', tags: [`Test ${F.periods.test_start} to ${F.periods.test_end}`, `${lgb.folds} refit blocks of 4 weeks`, 'WAPE = total absolute error ÷ total actual units'] }, (root) => {
+App.view('forecast', { title: 'Forecast', sub: 'One-week-ahead unit demand per product, evaluated by rolling origin against simple baselines.', tags: [`Test ${F.periods.test_start} to ${F.periods.test_end}`, `${lgb.folds} refit blocks of 4 weeks`, 'WAPE = total absolute error ÷ total actual units'] }, (root) => {
   const C = col();
   root.innerHTML = `
   ${banner(wins ? '<b>LightGBM beats the best baseline</b> on test WAPE.' : `<b>LightGBM does not beat the best baseline.</b> The ${L[base.model].toLowerCase()} has the lower test WAPE (${fmt.pct(base.wape)} against ${fmt.pct(lgb.wape)}), so it is the more accurate point forecast here. Before each 4-week block the models are refit on rows strictly before that block.`)}
@@ -37,3 +38,4 @@ App.page({ id: 'forecast', title: 'Forecast', sub: 'One-week-ahead unit demand p
   const pretty = (f) => f.replace(/_units$/, '').replace(/_/g, ' ');
   chart('c-shap', { type: 'bar', data: { labels: F.shap.slice(0, 10).map((s) => pretty(s.feature)), datasets: [{ data: F.shap.slice(0, 10).map((s) => s.mean_abs_shap), backgroundColor: withAlpha(C.violet, 0.8), borderRadius: 4, maxBarThickness: 16 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, scales: { x: axes().y, y: { grid: { display: false }, border: { display: false } } } } });
 });
+})();
