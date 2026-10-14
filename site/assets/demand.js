@@ -11,13 +11,12 @@ App.view('demand', { title: 'Demand', sub: 'Seasonality, trend and concentration
     ${tile({ cls: 'amber mini', label: 'Peak week', value: fmt.compact(O.weekly.units[pk]), text: `week of ${fmt.date(O.weeks[pk])}`, art: art.bars() })}
     ${tile({ cls: 'coral mini', label: 'Peak month', value: fmt.compact(O.monthly.units[pm]), text: monthLabel(O.monthly.labels[pm]), art: art.arcs() })}
     ${tile({ cls: 'slate mini', label: 'Q4 share', value: fmt.pct(q4, 0), text: 'of all units sold in Oct–Dec', art: art.rings() })}</div>
-  <div class="grid g-wide mt">
-    ${card('Weekly demand', 'Units and revenue proxy (units × small-order list price)', '<div class="chart lg"><canvas id="c-weekly"></canvas></div><div class="src">Partial first and last weeks drop toward zero.</div>', { tools: '<div class="seg" id="seg"><button data-k="weekly" class="on">Weekly</button><button data-k="monthly">Monthly</button></div>' })}
-    ${card('Seasonality', 'Units by calendar month, all years', '<div class="chart lg"><canvas id="c-season"></canvas></div>')}</div>
-  <div class="grid mt">${card('Demand calendar', 'Total units per ISO week, one row per year. Darker is higher.', '<div id="cal"></div><div class="scale"><span>Low</span><i id="cal-scale"></i><span>High</span></div>')}</div>
+  <div class="grid mt">
+    ${card('Weekly demand', 'Units and revenue proxy (units × small-order list price)', '<div class="chart lg"><canvas id="c-weekly"></canvas></div><div class="src">Partial first and last weeks drop toward zero.</div>', { tools: '<div class="seg" id="seg"><button data-k="weekly" class="on">Weekly</button><button data-k="monthly">Monthly</button></div>' })}</div>
   <div class="grid g2 mt">
-    ${card('Product tiers', 'Share of units by product rank', '<div class="chart sm fixed"><canvas id="c-tier"></canvas></div><div class="legend" id="tier-l"></div>')}
-    ${card('Top 10 products', 'By units', '<div class="table-wrap" style="max-height:none"><table><thead><tr><th>Product</th><th class="num">Units</th><th class="num">Avg price</th></tr></thead><tbody id="tb"></tbody></table></div>')}</div>
+    ${card('Seasonality', 'Units by calendar month, all years', '<div class="chart"><canvas id="c-season"></canvas></div>')}
+    ${card('Product tiers', 'Share of all units by product rank', '<div class="chart"><canvas id="c-tier"></canvas></div>')}</div>
+  <div class="grid mt">${card('Demand calendar', 'Total units per ISO week, one row per year. Darker is higher.', '<div id="cal"></div><div class="scale"><span>Low</span><i id="cal-scale"></i><span>High</span></div>')}</div>
   <div class="grid g2 mt">
     ${card('Concentration', 'Cumulative units vs share of products', '<div class="chart"><canvas id="c-pareto"></canvas></div>')}
     ${card('Availability proxy', 'Share of product-weeks with zero sales or flagged unavailable', '<div class="chart"><canvas id="c-zero"></canvas></div><div class="src">Inferred from sales gaps; not inventory data.</div>')}</div>`;
@@ -35,12 +34,12 @@ App.view('demand', { title: 'Demand', sub: 'Seasonality, trend and concentration
   heatmap(document.getElementById('cal'), mat, { rows: years, cols: Array.from({ length: 53 }, (_, i) => i + 1), color: 'green', tip: (v) => fmt.int(v) + ' units', showCols: (i) => i % 4 === 0 });
   document.getElementById('cal-scale').style.background = `linear-gradient(90deg, ${withAlpha(C.green, 0.1)}, ${C.green})`;
   const tc = [C.green, C.amber, C.slate, C.orange];
-  chart('c-tier', { type: 'doughnut', data: { labels: O.tiers.map((t) => t[0]), datasets: [{ data: O.tiers.map((t) => t[1] * 100), backgroundColor: tc, borderColor: C.card, borderWidth: 3, cutout: '68%' }] }, options: { maintainAspectRatio: false, plugins: { tooltip: { callbacks: { label: (c) => ` ${c.parsed.toFixed(1)}% of units` } } } } });
-  document.getElementById('tier-l').innerHTML = O.tiers.map((t, i) => `<div class="row"><span class="dot" style="background:${tc[i]}"></span><span>${t[0]}</span><span>${fmt.pct(t[1], 0)}</span></div>`).join('');
+  chart('c-tier', { type: 'pie', data: { labels: O.tiers.map((t) => t[0]), datasets: [{ data: O.tiers.map((t) => t[1] * 100), backgroundColor: tc, borderColor: C.card, borderWidth: 3 }] },
+    options: { maintainAspectRatio: false, layout: { padding: 8 }, plugins: { legend: { display: true, position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 10, padding: 18, font: { size: 15.5 }, generateLabels: (c) => c.data.labels.map((l, i) => ({ text: `${l}  ${c.data.datasets[0].data[i].toFixed(0)}%`, fillStyle: tc[i], strokeStyle: tc[i], pointStyle: 'circle', index: i })) }, onClick: null }, tooltip: { callbacks: { label: (c) => ` ${c.parsed.toFixed(1)}% of units` } } } },
+    plugins: [{ id: 'pct', afterDatasetsDraw(ch) { const m = ch.getDatasetMeta(0), g = ch.ctx; m.data.forEach((arc, i) => { const v = ch.data.datasets[0].data[i]; if (v < 6) return; const p = arc.tooltipPosition(); g.save(); g.fillStyle = '#fff'; g.font = '500 16px Outfit, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(v.toFixed(0) + '%', p.x, p.y); g.restore(); }); } }] });
   chart('c-pareto', { type: 'line', data: { datasets: [{ label: 'Cumulative units', data: O.pareto.map((p) => ({ x: p[0] * 100, y: p[1] * 100 })), borderColor: C.green, fill: true, backgroundColor: withAlpha(C.green, 0.1), tension: .3 }, { label: 'Even share', data: [{ x: 0, y: 0 }, { x: 100, y: 100 }], borderColor: C.faint, borderDash: [4, 4] }] },
     options: { maintainAspectRatio: false, parsing: false, interaction: { mode: 'nearest', intersect: false }, scales: { x: { type: 'linear', min: 0, max: 100, grid: { color: C.grid }, ticks: { callback: (v) => v + '%' }, title: { display: true, text: '% of products' } }, y: { min: 0, max: 100, grid: { color: C.grid }, border: { display: false }, ticks: { callback: (v) => v + '%' } } }, plugins: { legend: legend(), tooltip: { callbacks: { title: () => '', label: (c) => ` ${c.parsed.y.toFixed(0)}% at ${c.parsed.x.toFixed(0)}% of products` } } } } });
   chart('c-zero', { type: 'line', data: { labels: O.zero_by_month.labels.map(monthLabel), datasets: [{ label: 'Zero-sales weeks', data: O.zero_by_month.zero.map((v) => v * 100), borderColor: C.orange, tension: .3 }, { label: 'Possibly unavailable', data: O.zero_by_month.unavailable.map((v) => v * 100), borderColor: C.slate, tension: .3 }] },
     options: { maintainAspectRatio: false, scales: { x: axes().x, y: { ...axes().y, ticks: { callback: (v) => v + '%' } } }, plugins: { legend: legend() } } });
-  document.getElementById('tb').innerHTML = O.top_products.map((r) => `<tr onclick="location.href='products.html#${encodeURIComponent(r[0])}'" style="cursor:pointer"><td>${App.esc(nice(names[r[0]])).slice(0, 30)}<br><small style="color:var(--muted)">${r[0]}</small></td><td class="num">${fmt.int(r[1])}</td><td class="num">${fmt.gbp(r[3])}</td></tr>`).join('');
 });
 })();

@@ -14,3 +14,4 @@
 - Website: larger type (17px body, bigger chart labels), more spacing, taller charts and at most two charts per row; tabs regrouped into pairs so no chart sits alone in a row.
 - Website: four sidebar pages named for their content (Overview, Demand, Forecast, Pricing) with tabs inside each; larger type again (18.5px body, 15.5px chart labels).
 - Website: cards now fill their grid cell and charts grow to match their neighbour (no blank space inside cards); Demand tab regrouped; every chart card has an info button that explains what the visual is and what it tells.
+- Website: new Top products page (top 50 with share, revenue proxy, price and decision, plus a top-20 bar chart); Demand page now has a full-width weekly chart and a compact pie for product tiers.

@@ -5,6 +5,7 @@ FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="s
 PAGES = {
     "index": ("Overview", ["overview", "forecast", "pricing", "data", "search"], ["summary", "data", "about"]),
     "demand": ("Demand", ["overview", "customers", "products", "pricing", "forecast", "search"], ["demand", "customers", "products"]),
+    "top": ("Top products", ["overview", "products", "pricing", "search"], ["topproducts"]),
     "forecast": ("Forecast", ["overview", "forecast", "products", "search"], ["forecast", "lab"]),
     "pricing": ("Pricing", ["overview", "pricing", "products", "forecast", "search"], ["elasticity", "recs", "impact"]),
 }

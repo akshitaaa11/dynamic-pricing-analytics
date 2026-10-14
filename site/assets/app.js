@@ -11,6 +11,7 @@
     pricing: '<path d="M3.5 12V4.5H11l9.5 9.5-7 7z"/><circle cx="7.8" cy="8.8" r="1.2"/>',
     impact: '<path d="M5 20V10M12 20V4M19 20v-7"/>',
     data: '<ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12v6c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-6"/>',
+    top: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4.5a3 3 0 0 0 3.5 4M16 6h3.5a3 3 0 0 1-3.5 4M12 13v4M8.5 20h7M10 17h4"/>',
     about: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.4"/>',
     search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
     warn: '<path d="M12 4l9 16H3z"/><path d="M12 10v4.5M12 17.4v.2"/>',
@@ -20,7 +21,7 @@
     download: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
   };
   const icon = (n) => `<svg viewBox="0 0 24 24">${ICON[n] || ''}</svg>`;
-  const NAV = [['', [['home', 'index.html', 'Overview'], ['demand', 'demand.html', 'Demand'], ['forecast', 'forecast.html', 'Forecast'], ['pricing', 'pricing.html', 'Pricing']]]];
+  const NAV = [['', [['home', 'index.html', 'Overview'], ['demand', 'demand.html', 'Demand'], ['top', 'top.html', 'Top products'], ['forecast', 'forecast.html', 'Forecast'], ['pricing', 'pricing.html', 'Pricing']]]];
   const fmt = {
     int: (v) => (v == null || !isFinite(v) ? '–' : Math.round(v).toLocaleString('en-GB')),
     gbp: (v, d = 2) => (v == null || !isFinite(v) ? '–' : (v < 0 ? '−' : '') + '£' + Math.abs(v).toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d })),
@@ -168,7 +169,7 @@
       <nav class="nav">${nav}</nav>
       <div class="side-foot"><span><span class="chip">Research project</span></span><span>Online Retail II, 2009–2011. Revenue effects are model estimates, not measured results.</span></div></aside>
       <main class="main"><div class="head"><div><h1>${title}</h1><p id="vsub">${sub}</p></div><div class="theme"><button id="t-light" title="Light">${icon('sun')}</button><button id="t-dark" title="Dark">${icon('moon')}</button></div></div>
-      <div class="tabs" id="tabs">${tabs.map(([v, label]) => `<button data-v="${v}">${label}</button>`).join('')}</div>
+      <div class="tabs" id="tabs" ${tabs.length < 2 ? 'hidden' : ''}>${tabs.map(([v, label]) => `<button data-v="${v}">${label}</button>`).join('')}</div>
       <div class="tags" id="vtags"></div><div id="content"></div></main></div>`;
     const root = document.getElementById('content');
     const h = location.hash.slice(1);
