@@ -20,7 +20,6 @@ App.view('summary', { title: 'Dynamic Pricing Analytics', sub: 'Demand forecasti
       ${tile({ cls: 'amber', label: 'Price changes', badge: 'Guardrailed', value: fmt.int(SM.recommended), text: `Recommended within ±${P.guardrails.max_price_change_pct * 100}%. The rest are held.`, art: art.waves() })}
       ${tile({ cls: 'coral', label: 'Products', badge: 'Weekly panel', value: fmt.int(K.products), text: `${fmt.compact(K.units)} units over ${K.weeks} weeks.`, art: art.arcs() })}
       ${tile({ cls: 'olive wide', label: 'Interval coverage', badge: 'Forecast', value: fmt.pct(M.lightgbm.coverage_80, 0), text: 'Share of test product-weeks that landed inside the 80% prediction interval.', art: art.rings() })}
-    </div></div>
-  <div class="note mt2 ${M.lightgbm.wape < M.moving_average_4.wape ? 'ok' : 'warn'}">${M.lightgbm.wape < M.moving_average_4.wape ? '<b>LightGBM beats the baselines</b> on test WAPE.' : '<b>LightGBM does not beat the 4-week moving average</b> on test WAPE.'} Revenue figures are model estimates, not measured results. Use <b>Demand &amp; forecast</b> and <b>Pricing</b> in the sidebar for the detail.</div>`;
+    </div></div>`;
 });
 })();
